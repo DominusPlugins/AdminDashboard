@@ -5,6 +5,9 @@
 ( function ( $, mw ) {
 	'use strict';
 
+	// Prevent attaching duplicate event handlers across re-renders
+	var adminDashboardEventsBound = false;
+
 	// Minimal diagnostics
 	if ( typeof console !== 'undefined' && console.log ) {
 		console.log( '[AdminDashboard] scripts module loaded' );
@@ -14,9 +17,11 @@
 	 * Initialize dashboard functionality
 	 */
 	function initDashboard() {
+		if ( adminDashboardEventsBound ) { return; }
 		attachEventListeners();
 		initializeTableSorting();
 		initializeUserModal();
+		adminDashboardEventsBound = true;
 	}
 
 	/**
@@ -104,7 +109,7 @@
 			}
 		}
 		// Event delegation (jQuery) for username clicks
-		$( document ).on( 'click', '.user-edit-link', function ( e ) {
+		$( document ).off( 'click.adminDashboard', '.user-edit-link' ).on( 'click.adminDashboard', '.user-edit-link', function ( e ) {
 			e.preventDefault();
 			const row = this.closest( 'tr' );
 			if ( !row ) { if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] Click on .user-edit-link but no row found' ); return; }
@@ -123,34 +128,13 @@
 			showUserEditModal( userData );
 		} );
 
-		// Vanilla JS fallback delegation (in case jQuery handler is missed)
-		document.addEventListener( 'click', function ( e ) {
-			var link = e.target && ( e.target.closest ? e.target.closest( '.user-edit-link' ) : null );
-			if ( link ) {
-				if ( link.dataset && link.dataset.adHandled === '1' ) { return; }
-				e.preventDefault();
-				var row = link.closest( 'tr' );
-				if ( !row ) return;
-				var userData = {
-					id: row.dataset.userId,
-					name: row.dataset.userName,
-					email: row.dataset.userEmail || '',
-					groups: JSON.parse( row.dataset.userGroups || '[]' ),
-					registration: row.dataset.userRegistered || '',
-					touched: row.dataset.userTouched || ''
-				};
-				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] (fallback) Opening modal for user', userData.name );
-				showUserEditModal( userData );
-			}
-		} );
-
 		// Close modal when clicking close buttons
-		$( document ).on( 'click', '.modal-close', function () {
+		$( document ).off( 'click.adminDashboard', '.modal-close' ).on( 'click.adminDashboard', '.modal-close', function () {
 			hideUserEditModal();
 		} );
 
-		// Close modal when clicking overlay background
-		$( '#user-edit-modal' ).on( 'click', function ( e ) {
+		// Close modal when clicking overlay background (delegated)
+		$( document ).off( 'click.adminDashboard', '#user-edit-modal' ).on( 'click.adminDashboard', '#user-edit-modal', function ( e ) {
 			if ( e.target === this ) {
 				hideUserEditModal();
 			}
@@ -303,12 +287,10 @@
 			} );
 		}
 
-		$( document ).on( 'submit', '#user-edit-form', handleUserSave );
-		// Safety: also catch direct button clicks
-		$( document ).on( 'click', '#user-edit-form button[type="submit"]', handleUserSave );
+		$( document ).off( 'submit.adminDashboard', '#user-edit-form' ).on( 'submit.adminDashboard', '#user-edit-form', handleUserSave );
 
 		// Block user via core API
-		$( document ).on( 'click', '#block-user-btn', function () {
+		$( document ).off( 'click.adminDashboard', '#block-user-btn' ).on( 'click.adminDashboard', '#block-user-btn', function () {
 			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
 			if ( !username ) { notify( 'No username to block', { type: 'error' } ); return; }
 			const userId = ( document.getElementById( 'edit-user-id' ) || {} ).value || '';
@@ -332,7 +314,7 @@
 		} );
 
 		// Bulk actions
-		$( document ).on( 'click', '#bulk-apply-btn', function () {
+		$( document ).off( 'click.adminDashboard', '#bulk-apply-btn' ).on( 'click.adminDashboard', '#bulk-apply-btn', function () {
 			const actionSel = document.getElementById( 'bulk-action-select' );
 			const actionVal = actionSel ? actionSel.value : '';
 			if ( !actionVal ) { notify( 'Select a bulk action', { type: 'warn' } ); return; }
@@ -388,7 +370,7 @@
 		} );
 
 		// Add group button
-		$( document ).on( 'click', '#add-group-btn', function () {
+		$( document ).off( 'click.adminDashboard', '#add-group-btn' ).on( 'click.adminDashboard', '#add-group-btn', function () {
 			const select = document.getElementById( 'add-group-select' );
 			const groupsList = document.getElementById( 'user-groups-list' );
 			const groupName = ( select && select.value ) ? select.value : '';
@@ -402,21 +384,17 @@
 		} );
 
 		// Remove group (delegated)
-		$( document ).on( 'click', '.remove-group', function ( e ) {
+		$( document ).off( 'click.adminDashboard', '.remove-group' ).on( 'click.adminDashboard', '.remove-group', function ( e ) {
 			e.preventDefault();
 			const parent = this.closest( '.group-tag' );
 			if ( parent ) parent.remove();
 		} );
 
-		// Select all checkbox
-		const selectAll = document.getElementById( 'select-all' );
-		if ( selectAll ) {
-			selectAll.addEventListener( 'change', function () {
-				document.querySelectorAll( 'input[name="user_ids[]"]' ).forEach( function ( cb ) {
-					cb.checked = selectAll.checked;
-				} );
-			} );
-		}
+		// Select all checkbox (delegated)
+		$( document ).off( 'change.adminDashboard', '#select-all' ).on( 'change.adminDashboard', '#select-all', function () {
+			var checked = this.checked;
+			document.querySelectorAll( 'input[name="user_ids[]"]' ).forEach( function ( cb ) { cb.checked = checked; } );
+		} );
 	}
 
 	function showUserEditModal( user ) {
