@@ -67,7 +67,7 @@
 		$( document ).on( 'click', '.user-edit-link', function ( e ) {
 			e.preventDefault();
 			const row = this.closest( 'tr' );
-			if ( !row ) return;
+			if ( !row ) { if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] Click on .user-edit-link but no row found' ); return; }
 			const userData = {
 				id: row.dataset.userId,
 				name: row.dataset.userName,
@@ -76,8 +76,29 @@
 				registration: row.dataset.userRegistered || '',
 				touched: row.dataset.userTouched || ''
 			};
+			if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] Opening modal for user', userData.name );
 			showUserEditModal( userData );
 		} );
+
+		// Vanilla JS fallback delegation (in case jQuery handler is missed)
+		document.addEventListener( 'click', function ( e ) {
+			var link = e.target && ( e.target.closest ? e.target.closest( '.user-edit-link' ) : null );
+			if ( link ) {
+				e.preventDefault();
+				var row = link.closest( 'tr' );
+				if ( !row ) return;
+				var userData = {
+					id: row.dataset.userId,
+					name: row.dataset.userName,
+					email: row.dataset.userEmail || '',
+					groups: JSON.parse( row.dataset.userGroups || '[]' ),
+					registration: row.dataset.userRegistered || '',
+					touched: row.dataset.userTouched || ''
+				};
+				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] (fallback) Opening modal for user', userData.name );
+				showUserEditModal( userData );
+			}
+		}, true );
 
 		// Close modal when clicking close buttons
 		$( document ).on( 'click', '.modal-close', function () {
@@ -245,6 +266,7 @@
 		const touchedEl = document.getElementById( 'edit-last-active' );
 		const groupsList = document.getElementById( 'user-groups-list' );
 		const modal = document.getElementById( 'user-edit-modal' );
+		if ( !modal ) { if ( typeof console !== 'undefined' ) console.error( '[AdminDashboard] Modal element #user-edit-modal not found' ); return; }
 
 		if ( idEl ) idEl.value = user.id || '';
 		if ( nameEl ) nameEl.value = user.name || '';
@@ -274,9 +296,7 @@
 			if ( initEl ) initEl.value = JSON.stringify( Array.isArray( user.groups ) ? user.groups : [] );
 		} catch ( e ) {}
 
-		if ( modal ) {
-			modal.style.display = 'block';
-		}
+		modal.style.display = 'block';
 	}
 
 	function hideUserEditModal() {
