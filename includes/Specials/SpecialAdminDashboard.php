@@ -318,8 +318,8 @@ class SpecialAdminDashboard extends SpecialPage {
 			if (userData.groups && userData.groups.length > 0) {
 				userData.groups.forEach(function(group) {
 					const groupDiv = document.createElement("div");
-					groupDiv.style.cssText = "display: inline-block; background: #f0f0f0; padding: 2px 6px; margin: 2px; border-radius: 2px; font-size: 12px;";
-					groupDiv.innerHTML = group + " <button type=\"button\" onclick=\"removeGroup(this, \'" + group + "\')\" style=\"border: none; background: none; color: #d33; cursor: pointer; font-weight: bold;\">×</button>";
+					groupDiv.className = "group-tag";
+					groupDiv.innerHTML = group + " <button type=\"button\" onclick=\"removeGroup(this, \'" + group + "\')\">×</button>";
 					groupsList.appendChild(groupDiv);
 				});
 			} else {
@@ -375,8 +375,8 @@ class SpecialAdminDashboard extends SpecialPage {
 				if (groupName) {
 					const groupsList = document.getElementById("user-groups-list");
 					const groupDiv = document.createElement("div");
-					groupDiv.style.cssText = "display: inline-block; background: #f0f0f0; padding: 2px 6px; margin: 2px; border-radius: 2px; font-size: 12px;";
-					groupDiv.innerHTML = groupName + " <button type=\"button\" onclick=\"removeGroup(this, \'" + groupName + "\')\" style=\"border: none; background: none; color: #d33; cursor: pointer; font-weight: bold;\">×</button>";
+					groupDiv.className = "group-tag";
+					groupDiv.innerHTML = groupName + " <button type=\"button\" onclick=\"removeGroup(this, \'" + groupName + "\')\">×</button>";
 					groupsList.appendChild(groupDiv);
 					select.value = "";
 				}
