@@ -28,10 +28,10 @@
 			]
 		}
 	},
-    "ResourceFileModulePaths": {
-        "localBasePath": "./",
-        "remoteExtPath": "AdminDashboard"
-    },
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "AdminDashboard"
+	},
 	"SpecialPages": {
 		"AdminDashboard": "MediaWiki\\Extension\\AdminDashboard\\Specials\\SpecialAdminDashboard"
 	},
