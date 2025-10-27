@@ -170,6 +170,7 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= $this->makeNav();
 
 		// Search and Actions Bar
+		$html .= '<form method="GET">';
 		$html .= '<div class="user-management-controls">';
 		$html .= '<div class="controls-row">';
 
@@ -216,7 +217,6 @@ class SpecialAdminDashboard extends SpecialPage {
 			$blocked = isset( $blockInfo[$userId] ) ? 'Blocked' : 'Active';
 			$blockClass = $blocked === 'Blocked' ? ' class="mw-ui-destructive"' : '';
 			
-			$userLink = $GLOBALS['wgScriptPath'] . '/index.php/User:' . urlencode( $user['name'] );
 			$groups = !empty( $user['groups'] ) ? implode( ', ', array_map( 'htmlspecialchars', $user['groups'] ) ) : $this->msg( 'admindashboard-none' )->text();
 			
 			$html .= '<tr' . $blockClass . ' data-user-id="' . intval( $userId ) . '" data-user-name="' . htmlspecialchars( $user['name'] ) . '" data-user-email="' . htmlspecialchars( $user['email'] ?? '' ) . '" data-user-groups="' . htmlspecialchars( json_encode( $user['groups'] ) ) . '" data-user-registered="' . htmlspecialchars( $user['registration'] ) . '" data-user-touched="' . htmlspecialchars( $user['touched'] ) . '">';
@@ -471,9 +471,13 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '<table class="wikitable sortable"><tr><th>' . $this->msg( 'admindashboard-title' )->text() . '</th><th>' . $this->msg( 'admindashboard-last-modified' )->text() . '</th></tr>';
 
 		foreach ( $result as $row ) {
-			// Build the page URL properly
-			$pageTitle = str_replace( '_', ' ', $row->page_title );
-			$pageUrl = $GLOBALS['wgScriptPath'] . '/index.php/' . urlencode( $pageTitle );
+			// Build the page URL properly using Title object
+			$title = \Title::makeTitleSafe( $row->page_namespace, $row->page_title );
+			if ( !$title ) {
+				continue;
+			}
+			$pageTitle = $title->getPrefixedText();
+			$pageUrl = $title->getLocalURL();
 			
 			$html .= '<tr><td><a href="' . htmlspecialchars( $pageUrl ) . '">' . htmlspecialchars( $pageTitle ) . '</a></td>';
 			$html .= '<td>' . substr( $row->page_touched, 0, 10 ) . '</td></tr>';
@@ -549,6 +553,6 @@ class SpecialAdminDashboard extends SpecialPage {
 		} else {
 			$title = \SpecialPage::getTitleFor( 'AdminDashboard', $section );
 		}
-		return htmlspecialchars( $title->getFullURL() );
+		return $title->getFullURL();
 	}
 }

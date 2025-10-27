@@ -42,15 +42,12 @@ class StatisticsManager {
 		);
 
 		// Active users (last 30 days)
-		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 		$timestamp = $dbr->timestamp( time() - 30 * 24 * 3600 );
 		$activeUsers = $dbr->selectField(
 			'user',
 			'COUNT(*)',
-			[ 'user_touched > ' . $dbr->addQuotes( $timestamp ) ],
-			__METHOD__,
-			[],
-			[]
+			'user_touched > ' . $dbr->addQuotes( $timestamp ),
+			__METHOD__
 		);
 
 		return [
