@@ -130,18 +130,37 @@ class SpecialAdminDashboard extends SpecialPage {
 			}
 		}
 
-		// Get block information
+		// Get block information (try different table names for compatibility)
 		$userIds = array_keys( $users );
 		$blockInfo = [];
 		if ( !empty( $userIds ) ) {
-			$blockResult = $dbr->select(
-				'ipblocks',
-				[ 'ipb_user', 'ipb_reason', 'ipb_expiry' ],
-				[ 'ipb_user' => $userIds ],
-				__METHOD__
-			);
-			foreach ( $blockResult as $row ) {
-				$blockInfo[$row->ipb_user] = [ 'reason' => $row->ipb_reason, 'expiry' => $row->ipb_expiry ];
+			try {
+				// Try 'block' table first (newer MediaWiki versions)
+				$blockResult = $dbr->select(
+					'block',
+					[ 'bl_user', 'bl_reason', 'bl_expiry' ],
+					[ 'bl_user' => $userIds ],
+					__METHOD__
+				);
+				foreach ( $blockResult as $row ) {
+					$blockInfo[$row->bl_user] = [ 'reason' => $row->bl_reason, 'expiry' => $row->bl_expiry ];
+				}
+			} catch ( \Exception $e ) {
+				try {
+					// Try 'ipblocks' table (older MediaWiki versions)
+					$blockResult = $dbr->select(
+						'ipblocks',
+						[ 'ipb_user', 'ipb_reason', 'ipb_expiry' ],
+						[ 'ipb_user' => $userIds ],
+						__METHOD__
+					);
+					foreach ( $blockResult as $row ) {
+						$blockInfo[$row->ipb_user] = [ 'reason' => $row->ipb_reason, 'expiry' => $row->ipb_expiry ];
+					}
+				} catch ( \Exception $e ) {
+					// If neither table exists, just assume no blocks
+					$blockInfo = [];
+				}
 			}
 		}
 
