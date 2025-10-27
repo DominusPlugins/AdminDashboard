@@ -53,6 +53,46 @@
 	 */
 	function initializeUserModal() {
 		var isSavingUser = false;
+		// Ensure modal exists; if not, create a minimal one so clicks still work
+		function ensureModalExists() {
+			if ( document.getElementById( 'user-edit-modal' ) ) { return; }
+			if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] Modal not found in DOM. Injecting fallback modal skeleton.' );
+			var wrapper = document.createElement( 'div' );
+			wrapper.innerHTML = '' +
+				'<div id="user-edit-modal" class="modal-overlay" style="display:none;">' +
+				'	<div class="modal-content">' +
+				'		<div class="modal-header">' +
+				'			<h3 id="modal-title">Edit user</h3>' +
+				'			<button type="button" class="modal-close mw-ui-button">×</button>' +
+				'		</div>' +
+				'		<form id="user-edit-form">' +
+				'			<input type="hidden" id="edit-user-id" name="user_id">' +
+				'			<input type="hidden" id="initial-groups" value="[]">' +
+				'			<fieldset>' +
+				'				<legend>User details</legend>' +
+				'				<div><label for="edit-username">Username:</label><input type="text" id="edit-username" class="mw-ui-input" readonly></div>' +
+				'				<div><label for="edit-email">Email:</label><input type="email" id="edit-email" name="email" class="mw-ui-input"></div>' +
+				'				<div><label>Registered:</label><span id="edit-registered"></span></div>' +
+				'				<div><label>Last active:</label><span id="edit-last-active"></span></div>' +
+				'			</fieldset>' +
+				'			<fieldset>' +
+				'				<legend>User groups</legend>' +
+				'				<div id="user-groups-list"></div>' +
+				'				<div><label for="add-group-select">Add group:</label><select id="add-group-select" class="mw-ui-select"><option value="">Select a group</option><option value="sysop">sysop</option><option value="bureaucrat">bureaucrat</option><option value="bot">bot</option><option value="interface-admin">interface-admin</option></select> <button type="button" id="add-group-btn" class="mw-ui-button mw-ui-button-primary">Add</button></div>' +
+				'			</fieldset>' +
+				'			<div class="modal-footer">' +
+				'				<button type="button" class="modal-close mw-ui-button">Cancel</button>' +
+				'				<button type="submit" class="mw-ui-button mw-ui-button-primary">Save</button>' +
+				'				<button type="button" id="block-user-btn" class="mw-ui-button mw-ui-button-destructive">Block user</button>' +
+				'			</div>' +
+				'		</form>' +
+				'	</div>' +
+				'</div>';
+			var modal = wrapper.firstChild;
+			document.body.appendChild( modal );
+		}
+
+		ensureModalExists();
 
 		function notify( message, opts ) {
 			if ( mw && typeof mw.notify === 'function' ) {
