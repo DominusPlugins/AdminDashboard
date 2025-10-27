@@ -53,6 +53,16 @@
 	 */
 	function initializeUserModal() {
 		var isSavingUser = false;
+
+		function notify( message, opts ) {
+			if ( mw && typeof mw.notify === 'function' ) {
+				mw.notify( message, opts || {} );
+			} else if ( typeof alert === 'function' ) {
+				alert( message );
+			} else if ( typeof console !== 'undefined' ) {
+				console.log( '[AdminDashboard notify]', message, opts );
+			}
+		}
 		// Event delegation (jQuery) for username clicks
 		$( document ).on( 'click', '.user-edit-link', function ( e ) {
 			e.preventDefault();
@@ -100,11 +110,11 @@
 			try { initGroups = JSON.parse( initGroupsStr ); } catch ( _e ) {}
 			const nowGroups = getGroupsFromUI();
 			const d = diffGroups( initGroups, nowGroups );
-			if ( !username ) { ( mw.notify ? mw.notify( 'No username found', { type: 'error' } ) : alert( 'No username found' ) ); return; }
+			if ( !username ) { notify( 'No username found', { type: 'error' } ); return; }
 
 			if ( d.add.length === 0 && d.remove.length === 0 ) {
 				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] No changes detected' );
-				mw.notify && mw.notify( 'No changes to save', { type: 'info' } );
+				notify( 'No changes to save', { type: 'info' } );
 				hideUserEditModal();
 				return;
 			}
@@ -119,11 +129,11 @@
 			if ( d.remove.length ) { params.remove = d.remove.join( '|' ); }
 			api.postWithToken( 'csrf', params ).done( function ( data ) {
 				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] userrights success', data );
-				mw.notify && mw.notify( 'User groups updated', { type: 'success' } );
+				notify( 'User groups updated', { type: 'success' } );
 				hideUserEditModal();
 			} ).fail( function ( err ) {
 				if ( typeof console !== 'undefined' ) console.error( '[AdminDashboard] userrights failed', err );
-				mw.notify && mw.notify( 'Failed to update groups: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
+				notify( 'Failed to update groups: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
 			} ).always( function () {
 				isSavingUser = false;
 				if ( saveBtn ) {
@@ -140,7 +150,7 @@
 		// Block user via core API
 		$( document ).on( 'click', '#block-user-btn', function () {
 			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
-			if ( !username ) { mw.notify( 'No username to block', { type: 'error' } ); return; }
+			if ( !username ) { notify( 'No username to block', { type: 'error' } ); return; }
 			const api = new mw.Api();
 			api.postWithToken( 'csrf', {
 				action: 'block',
@@ -151,10 +161,10 @@
 				autoblock: 1,
 				format: 'json'
 			} ).done( function () {
-				mw.notify( 'User blocked', { type: 'success' } );
+				notify( 'User blocked', { type: 'success' } );
 				hideUserEditModal();
 			} ).fail( function ( err ) {
-				mw.notify( 'Failed to block user: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
+				notify( 'Failed to block user: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
 			} );
 		} );
 
@@ -162,7 +172,7 @@
 		$( document ).on( 'click', '#bulk-apply-btn', function () {
 			const actionSel = document.getElementById( 'bulk-action-select' );
 			const actionVal = actionSel ? actionSel.value : '';
-			if ( !actionVal ) { mw.notify( 'Select a bulk action', { type: 'warn' } ); return; }
+			if ( !actionVal ) { notify( 'Select a bulk action', { type: 'warn' } ); return; }
 			const ids = Array.from( document.querySelectorAll( 'input[name="user_ids[]"]:checked' ) )
 				.map( function ( cb ) { return cb.closest( 'tr' ); } )
 				.filter( Boolean )
@@ -170,7 +180,7 @@
 					name: row.dataset.userName
 				}; } )
 				.filter( function ( u ) { return !!u.name; } );
-			if ( ids.length === 0 ) { mw.notify( 'Select at least one user', { type: 'warn' } ); return; }
+			if ( ids.length === 0 ) { notify( 'Select at least one user', { type: 'warn' } ); return; }
 
 			const api = new mw.Api();
 			const calls = ids.map( function ( u ) {
@@ -187,9 +197,9 @@
 			Promise.allSettled( calls ).then( function ( results ) {
 				const failed = results.filter( function ( r ) { return r.status === 'rejected'; } );
 				if ( failed.length ) {
-					mw.notify( 'Some actions failed (' + failed.length + ')', { type: 'warn' } );
+					notify( 'Some actions failed (' + failed.length + ')', { type: 'warn' } );
 				} else {
-					mw.notify( 'Bulk action completed', { type: 'success' } );
+					notify( 'Bulk action completed', { type: 'success' } );
 				}
 			} );
 		} );

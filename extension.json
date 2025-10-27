@@ -25,8 +25,7 @@
 			"scripts": [ "resources/js/dashboard.js" ],
 			"dependencies": [
 				"jquery",
-				"mediawiki.api",
-				"mediawiki.notify"
+				"mediawiki.api"
 			]
 		}
 	},
