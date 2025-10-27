@@ -227,6 +227,88 @@
 	.user-management-controls .bulk-actions-section {
 		min-width: auto;
 	}
+/* User management controls */
+.user-management-controls {
+	background: #f8f9fa;
+	border: 1px solid #a2a9b1;
+	border-radius: 2px;
+	padding: 16px;
+	margin-bottom: 20px;
+}
+
+.controls-row {
+	display: flex;
+	gap: 20px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
+
+.search-section,
+.bulk-actions-section {
+	flex: 1;
+	min-width: 250px;
+}
+
+.search-section label,
+.bulk-actions-section label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.search-section div,
+.bulk-actions-section div {
+	display: flex;
+	gap: 8px;
+}
+
+.search-section input,
+.bulk-actions-section select {
+	flex: 1;
+}
+
+.search-section input {
+	min-width: 200px;
+}
+
+.bulk-actions-section {
+	min-width: 200px;
+}
+
+/* Modal form styling */
+.modal-content fieldset {
+	border: 1px solid #a2a9b1 !important;
+	border-radius: 2px !important;
+	padding: 12px !important;
+	margin-bottom: 15px !important;
+}
+
+.modal-content legend {
+	font-weight: bold !important;
+	padding: 0 8px !important;
+	color: #202122 !important;
+	border: none !important;
+	font-size: 14px !important;
+}
+
+.modal-content div {
+	margin-bottom: 10px !important;
+}
+
+.modal-content label {
+	display: block !important;
+	font-weight: 600 !important;
+	margin-bottom: 4px !important;
+	color: #202122 !important;
+}
+
+.modal-content input,
+.modal-content select {
+	width: 100% !important;
+}
+
+.modal-content span {
+	color: #666 !important;
 }
 
 /* Modal styles */
@@ -333,4 +415,4 @@
 .bulk-actions-section div {
 	display: flex !important;
 	gap: 8px !important;
-}
+}}

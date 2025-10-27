@@ -169,14 +169,14 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= $this->makeNav();
 
 		// Search and Actions Bar
-		$html .= '<div class="user-management-controls" style="background: #f8f9fa; border: 1px solid #a2a9b1; border-radius: 2px; padding: 16px; margin-bottom: 20px;">';
-		$html .= '<div class="controls-row" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">';
+		$html .= '<div class="user-management-controls">';
+		$html .= '<div class="controls-row">';
 
 		// Search section
-		$html .= '<div class="search-section" style="flex: 1; min-width: 250px;">';
-		$html .= '<label for="search-input" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-search-users' )->text() . ':</label>';
-		$html .= '<div style="display: flex; gap: 8px;">';
-		$html .= '<input type="text" id="search-input" name="search" value="' . htmlspecialchars( $search ) . '" class="mw-ui-input" style="flex: 1;" placeholder="' . $this->msg( 'admindashboard-search-users' )->text() . '">';
+		$html .= '<div class="search-section">';
+		$html .= '<label for="search-input">' . $this->msg( 'admindashboard-search-users' )->text() . ':</label>';
+		$html .= '<div>';
+		$html .= '<input type="text" id="search-input" name="search" value="' . htmlspecialchars( $search ) . '" class="mw-ui-input" placeholder="' . $this->msg( 'admindashboard-search-users' )->text() . '">';
 		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-search' )->text() . '</button>';
 		if ( $search ) {
 			$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'users' ) ) . '" class="mw-ui-button">' . $this->msg( 'admindashboard-clear' )->text() . '</a>';
@@ -185,10 +185,10 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '</div>';
 
 		// Bulk actions section
-		$html .= '<div class="bulk-actions-section" style="min-width: 200px;">';
-		$html .= '<label for="bulk-action-select" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-bulk-actions' )->text() . ':</label>';
-		$html .= '<div style="display: flex; gap: 8px;">';
-		$html .= '<select id="bulk-action-select" name="bulk_action" class="mw-ui-select" style="flex: 1;">';
+		$html .= '<div class="bulk-actions-section">';
+		$html .= '<label for="bulk-action-select">' . $this->msg( 'admindashboard-bulk-actions' )->text() . ':</label>';
+		$html .= '<div>';
+		$html .= '<select id="bulk-action-select" name="bulk_action" class="mw-ui-select">';
 		$html .= '<option value="">' . $this->msg( 'admindashboard-select-action' )->text() . '</option>';
 		$html .= '<option value="promote">' . $this->msg( 'admindashboard-promote-sysop' )->text() . '</option>';
 		$html .= '<option value="demote">' . $this->msg( 'admindashboard-remove-sysop' )->text() . '</option>';
@@ -203,12 +203,12 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '</form>'; // Close the search form
 
 		// Start a new form for bulk actions
-		$html .= '<form method="POST" id="bulk-actions-form" style="display: none;">';
+		$html .= '<form method="POST" id="bulk-actions-form">';
 		$html .= '<input type="hidden" name="bulk_action" id="bulk-action-value">';
 		$html .= '<input type="hidden" name="user_ids" id="selected-user-ids">';
 		$html .= '</form>';
 
-		$html .= '<table class="wikitable sortable" style="width: 100%;">';
+		$html .= '<table class="wikitable sortable">';
 		$html .= '<tr><th><input type="checkbox" id="select-all"></th><th>' . $this->msg( 'admindashboard-username' )->text() . '</th><th>' . $this->msg( 'admindashboard-groups' )->text() . '</th><th>' . $this->msg( 'admindashboard-registered' )->text() . '</th><th>' . $this->msg( 'admindashboard-last-active' )->text() . '</th><th>' . $this->msg( 'admindashboard-email' )->text() . '</th><th>' . $this->msg( 'admindashboard-status' )->text() . '</th></tr>';
 
 		foreach ( $users as $userId => $user ) {
@@ -239,63 +239,63 @@ class SpecialAdminDashboard extends SpecialPage {
 		}
 
 		// User Edit Modal
-		$html .= '<div id="user-edit-modal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">';
-		$html .= '<div class="modal-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #a2a9b1; border-radius: 4px; padding: 20px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">';
-		$html .= '<div class="modal-header" style="border-bottom: 1px solid #a2a9b1; padding-bottom: 10px; margin-bottom: 15px;">';
+		$html .= '<div id="user-edit-modal" class="modal-overlay">';
+		$html .= '<div class="modal-content">';
+		$html .= '<div class="modal-header">';
 		$html .= '<h3 id="modal-title">' . $this->msg( 'admindashboard-edit-user' )->text() . '</h3>';
-		$html .= '<button type="button" class="modal-close mw-ui-button" style="float: right;">×</button>';
+		$html .= '<button type="button" class="modal-close mw-ui-button">×</button>';
 		$html .= '</div>';
 		$html .= '<form id="user-edit-form">';
 		$html .= '<input type="hidden" id="edit-user-id" name="user_id">';
 
 		// User details section
-		$html .= '<fieldset style="border: 1px solid #a2a9b1; border-radius: 2px; padding: 12px; margin-bottom: 15px;">';
-		$html .= '<legend style="font-weight: bold; padding: 0 8px;">' . $this->msg( 'admindashboard-user-details' )->text() . '</legend>';
+		$html .= '<fieldset>';
+		$html .= '<legend>' . $this->msg( 'admindashboard-user-details' )->text() . '</legend>';
 
-		$html .= '<div style="margin-bottom: 10px;">';
-		$html .= '<label for="edit-username" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-username' )->text() . ':</label>';
-		$html .= '<input type="text" id="edit-username" class="mw-ui-input" readonly style="width: 100%;">';
+		$html .= '<div>';
+		$html .= '<label for="edit-username">' . $this->msg( 'admindashboard-username' )->text() . ':</label>';
+		$html .= '<input type="text" id="edit-username" class="mw-ui-input" readonly>';
 		$html .= '</div>';
 
-		$html .= '<div style="margin-bottom: 10px;">';
-		$html .= '<label for="edit-email" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-email' )->text() . ':</label>';
-		$html .= '<input type="email" id="edit-email" name="email" class="mw-ui-input" style="width: 100%;">';
+		$html .= '<div>';
+		$html .= '<label for="edit-email">' . $this->msg( 'admindashboard-email' )->text() . ':</label>';
+		$html .= '<input type="email" id="edit-email" name="email" class="mw-ui-input">';
 		$html .= '</div>';
 
-		$html .= '<div style="margin-bottom: 10px;">';
-		$html .= '<label style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-registered' )->text() . ':</label>';
-		$html .= '<span id="edit-registered" style="color: #666;"></span>';
+		$html .= '<div>';
+		$html .= '<label>' . $this->msg( 'admindashboard-registered' )->text() . ':</label>';
+		$html .= '<span id="edit-registered"></span>';
 		$html .= '</div>';
 
-		$html .= '<div style="margin-bottom: 10px;">';
-		$html .= '<label style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-last-active' )->text() . ':</label>';
-		$html .= '<span id="edit-last-active" style="color: #666;"></span>';
+		$html .= '<div>';
+		$html .= '<label>' . $this->msg( 'admindashboard-last-active' )->text() . ':</label>';
+		$html .= '<span id="edit-last-active"></span>';
 		$html .= '</div>';
 		$html .= '</fieldset>';
 
 		// User groups section
-		$html .= '<fieldset style="border: 1px solid #a2a9b1; border-radius: 2px; padding: 12px; margin-bottom: 15px;">';
-		$html .= '<legend style="font-weight: bold; padding: 0 8px;">' . $this->msg( 'admindashboard-user-groups' )->text() . '</legend>';
-		$html .= '<div id="user-groups-list" style="margin-bottom: 10px;"></div>';
+		$html .= '<fieldset>';
+		$html .= '<legend>' . $this->msg( 'admindashboard-user-groups' )->text() . '</legend>';
+		$html .= '<div id="user-groups-list"></div>';
 
-		$html .= '<div style="margin-bottom: 10px;">';
-		$html .= '<label for="add-group-select" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-add-group' )->text() . ':</label>';
-		$html .= '<select id="add-group-select" class="mw-ui-select" style="width: 100%;">';
+		$html .= '<div>';
+		$html .= '<label for="add-group-select">' . $this->msg( 'admindashboard-add-group' )->text() . ':</label>';
+		$html .= '<select id="add-group-select" class="mw-ui-select">';
 		$html .= '<option value="">' . $this->msg( 'admindashboard-select-group' )->text() . '</option>';
 		$html .= '<option value="sysop">' . $this->msg( 'admindashboard-sysop' )->text() . '</option>';
 		$html .= '<option value="bureaucrat">' . $this->msg( 'admindashboard-bureaucrat' )->text() . '</option>';
 		$html .= '<option value="bot">' . $this->msg( 'admindashboard-bot' )->text() . '</option>';
 		$html .= '<option value="interface-admin">' . $this->msg( 'admindashboard-interface-admin' )->text() . '</option>';
 		$html .= '</select>';
-		$html .= '<button type="button" id="add-group-btn" class="mw-ui-button mw-ui-button-primary" style="margin-top: 8px;">' . $this->msg( 'admindashboard-add' )->text() . '</button>';
+		$html .= '<button type="button" id="add-group-btn" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-add' )->text() . '</button>';
 		$html .= '</div>';
 		$html .= '</fieldset>';
 
 		// Action buttons
-		$html .= '<div class="modal-footer" style="border-top: 1px solid #a2a9b1; padding-top: 15px; text-align: right;">';
+		$html .= '<div class="modal-footer">';
 		$html .= '<button type="button" class="modal-close mw-ui-button">' . $this->msg( 'admindashboard-cancel' )->text() . '</button>';
-		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-primary" style="margin-left: 8px;">' . $this->msg( 'admindashboard-save' )->text() . '</button>';
-		$html .= '<button type="button" id="block-user-btn" class="mw-ui-button mw-ui-button-destructive" style="margin-left: 8px;">' . $this->msg( 'admindashboard-block-user' )->text() . '</button>';
+		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-save' )->text() . '</button>';
+		$html .= '<button type="button" id="block-user-btn" class="mw-ui-button mw-ui-button-destructive">' . $this->msg( 'admindashboard-block-user' )->text() . '</button>';
 		$html .= '</div>';
 
 		$html .= '</form>';
