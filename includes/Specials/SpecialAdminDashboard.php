@@ -132,11 +132,12 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '<table class="wikitable sortable"><tr><th>Title</th><th>Last Modified</th></tr>';
 
 		foreach ( $result as $row ) {
-			$title = \Title::makeTitleSafe( $row->page_namespace, $row->page_title );
-			if ( $title ) {
-				$html .= '<tr><td><a href="' . htmlspecialchars( $title->getFullURL() ) . '">' . htmlspecialchars( $title->getPrefixedText() ) . '</a></td>';
-				$html .= '<td>' . substr( $row->page_touched, 0, 10 ) . '</td></tr>';
-			}
+			// Simple approach: just build the page URL without using Title class
+			$pageTitle = str_replace( '_', ' ', $row->page_title );
+			$pageUrl = wfExpandUrl( '/index.php/' . urlencode( $pageTitle ) );
+			
+			$html .= '<tr><td><a href="' . htmlspecialchars( $pageUrl ) . '">' . htmlspecialchars( $pageTitle ) . '</a></td>';
+			$html .= '<td>' . substr( $row->page_touched, 0, 10 ) . '</td></tr>';
 		}
 
 		$html .= '</table></div>';
