@@ -161,30 +161,39 @@
 			retry = typeof retry === 'number' ? retry : 1;
 			const api = new mw.Api();
 			const base = Object.assign( { format: 'json', assert: 'user' }, params );
-			function attempt( token, mayRetry ) {
+			var dfd = $.Deferred();
+
+			function postWith( token, mayRetry ) {
 				const fullParams = Object.assign( {}, base, { token: token } );
-				return api.post( fullParams ).catch( function ( err ) {
+				api.post( fullParams ).done( function ( data ) {
+					dfd.resolve( data );
+				} ).fail( function ( err ) {
 					const code = err && err.error && err.error.code;
 					if ( code === 'badtoken' && mayRetry && retry > 0 ) {
 						if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] badtoken, fetching fresh token and retrying' );
-						return api.getToken( 'csrf' ).then( function ( fresh ) {
-							return attempt( fresh, false );
+						api.getToken( 'csrf' ).done( function ( fresh ) {
+							postWith( fresh, false );
+						} ).fail( function ( e2 ) {
+							dfd.reject( e2 );
 						} );
+					} else {
+						dfd.reject( err );
 					}
-					return Promise.reject( err );
 				} );
 			}
-			// Try fast path with cached token first
+
 			try {
 				var cached = mw.user && mw.user.tokens && mw.user.tokens.get ? mw.user.tokens.get( 'csrfToken' ) : null;
 				if ( cached ) {
-					return attempt( cached, true );
+					postWith( cached, true );
+				} else {
+					api.getToken( 'csrf' ).done( function ( token ) { postWith( token, true ); } ).fail( function ( e ) { dfd.reject( e ); } );
 				}
-			} catch ( _e ) {}
-			// Fallback: fetch a token
-			return api.getToken( 'csrf' ).then( function ( token ) {
-				return attempt( token, true );
-			} );
+			} catch ( _e ) {
+				api.getToken( 'csrf' ).done( function ( token ) { postWith( token, true ); } ).fail( function ( e ) { dfd.reject( e ); } );
+			}
+
+			return dfd.promise();
 		}
 
 		// Save user (groups) via API userrights
@@ -206,12 +215,19 @@
 			try { initGroups = JSON.parse( initGroupsStr ); } catch ( _e ) {}
 			const nowGroups = getGroupsFromUI();
 			const d = diffGroups( initGroups, nowGroups );
-			if ( !username ) { notify( 'No username found', { type: 'error' } ); return; }
+			if ( !username ) {
+				notify( 'No username found', { type: 'error' } );
+				isSavingUser = false;
+				if ( saveBtn ) { saveBtn.disabled = false; saveBtn.textContent = saveBtn.dataset.origText || 'Save'; }
+				return;
+			}
 
 			if ( d.add.length === 0 && d.remove.length === 0 ) {
 				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] No changes detected' );
 				notify( 'No changes to save', { type: 'info' } );
 				hideUserEditModal();
+				isSavingUser = false;
+				if ( saveBtn ) { saveBtn.disabled = false; saveBtn.textContent = saveBtn.dataset.origText || 'Save'; }
 				return;
 			}
 
@@ -221,14 +237,14 @@
 			};
 			if ( d.add.length ) { params.add = d.add.join( '|' ); }
 			if ( d.remove.length ) { params.remove = d.remove.join( '|' ); }
-			apiPostWithCsrf( params ).then( function ( data ) {
+			apiPostWithCsrf( params ).done( function ( data ) {
 				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] userrights success', data );
 				notify( 'User groups updated', { type: 'success' } );
 				hideUserEditModal();
-			} ).catch( function ( err ) {
+			} ).fail( function ( err ) {
 				if ( typeof console !== 'undefined' ) console.error( '[AdminDashboard] userrights failed', err );
 				notify( 'Failed to update groups: ' + ( err && err.error && ( err.error.info || err.error.code ) || 'Unknown error' ), { type: 'error' } );
-			} ).finally( function () {
+			} ).always( function () {
 				isSavingUser = false;
 				if ( saveBtn ) {
 					saveBtn.disabled = false;
@@ -252,10 +268,10 @@
 				expiry: '2 weeks',
 				nocreate: 1,
 				autoblock: 1
-			} ).then( function () {
+			} ).done( function () {
 				notify( 'User blocked', { type: 'success' } );
 				hideUserEditModal();
-			} ).catch( function ( err ) {
+			} ).fail( function ( err ) {
 				notify( 'Failed to block user: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
 			} );
 		} );
@@ -276,11 +292,11 @@
 
 			const calls = ids.map( function ( u ) {
 				if ( actionVal === 'promote' ) {
-					return apiPostWithCsrf( { action: 'userrights', user: u.name, add: 'sysop' } );
+					return new Promise( function ( resolve, reject ) { apiPostWithCsrf( { action: 'userrights', user: u.name, add: 'sysop' } ).done( resolve ).fail( reject ); } );
 				} else if ( actionVal === 'demote' ) {
-					return apiPostWithCsrf( { action: 'userrights', user: u.name, remove: 'sysop' } );
+					return new Promise( function ( resolve, reject ) { apiPostWithCsrf( { action: 'userrights', user: u.name, remove: 'sysop' } ).done( resolve ).fail( reject ); } );
 				} else if ( actionVal === 'block' ) {
-					return apiPostWithCsrf( { action: 'block', user: u.name, reason: 'Bulk block (AdminDashboard)', expiry: '2 weeks', nocreate: 1, autoblock: 1 } );
+					return new Promise( function ( resolve, reject ) { apiPostWithCsrf( { action: 'block', user: u.name, reason: 'Bulk block (AdminDashboard)', expiry: '2 weeks', nocreate: 1, autoblock: 1 } ).done( resolve ).fail( reject ); } );
 				}
 				return Promise.resolve();
 			} );
