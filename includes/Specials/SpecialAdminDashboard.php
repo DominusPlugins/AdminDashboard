@@ -359,7 +359,8 @@ class SpecialAdminDashboard extends SpecialPage {
 		// Create/modify group form (generates snippet)
 		$html .= '<h2 style="margin-top:1.5em;">' . $this->msg( 'admindashboard-create-group' )->escaped() . '</h2>';
 		$html .= '<form method="post">';
-		$html .= \Html::hidden( 'generate_group_snippet', '1' );
+		// Use plain HTML input to avoid dependency on Html helper class on older MW installs
+		$html .= '<input type="hidden" name="generate_group_snippet" value="1">';
 		$html .= '<div class="mw-form">';
 		$html .= '<div class="field"><label for="group_name">' . $this->msg( 'admindashboard-group-name' )->escaped() . '</label> '
 			. '<input type="text" class="mw-ui-input" id="group_name" name="group_name" required placeholder="mygroup"></div>';
