@@ -304,10 +304,28 @@ class SpecialAdminDashboard extends SpecialPage {
 			$dbGroups[] = (string)$row->ug_group;
 		}
 		$cfgGroupPerms = (array)$config->get( 'GroupPermissions' );
+		// Fallback to global for older MW or when config bag is empty
+		if ( !$cfgGroupPerms && isset( $GLOBALS['wgGroupPermissions'] ) && is_array( $GLOBALS['wgGroupPermissions'] ) ) {
+			$cfgGroupPerms = $GLOBALS['wgGroupPermissions'];
+		}
 		$allGroupNames = array_values( array_unique( array_merge( array_keys( $cfgGroupPerms ), $dbGroups ) ) );
 		sort( $allGroupNames );
 
 		$availableRights = (array)$config->get( 'AvailableRights' );
+		if ( !$availableRights && isset( $GLOBALS['wgAvailableRights'] ) && is_array( $GLOBALS['wgAvailableRights'] ) ) {
+			$availableRights = $GLOBALS['wgAvailableRights'];
+		}
+		// Final fallback: derive from union of group permissions
+		if ( !$availableRights ) {
+			$seen = [];
+			foreach ( $cfgGroupPerms as $g => $rightsArr ) {
+				if ( !is_array( $rightsArr ) ) { continue; }
+				foreach ( $rightsArr as $right => $allowed ) {
+					$seen[$right] = true;
+				}
+			}
+			$availableRights = array_keys( $seen );
+		}
 		sort( $availableRights );
 
 		// Handle POST to generate config snippet (no direct config writes)
@@ -345,7 +363,7 @@ class SpecialAdminDashboard extends SpecialPage {
 			$rightsList = [];
 			if ( isset( $cfgGroupPerms[$group] ) && is_array( $cfgGroupPerms[$group] ) ) {
 				foreach ( $cfgGroupPerms[$group] as $right => $allowed ) {
-					if ( $allowed ) { $rightsList[] = $right; }
+					if ( $allowed ) { $rightsList[] = (string)$right; }
 				}
 			}
 			$html .= '<tr>'
