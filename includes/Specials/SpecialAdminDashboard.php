@@ -293,20 +293,97 @@ class SpecialAdminDashboard extends SpecialPage {
 		$out = $this->getOutput();
 		$out->setPageTitle( 'Permission Management' );
 
-		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
-		$result = $dbr->select( 'user_groups', [ 'ug_group' ], [], __METHOD__, [ 'GROUP BY' => 'ug_group' ] );
+		$services = MediaWikiServices::getInstance();
+		$dbr = $services->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		$config = $services->getMainConfig();
+
+		// Gather groups from DB (memberships) and from config (permissions)
+		$dbGroupsRes = $dbr->select( 'user_groups', [ 'ug_group' ], [], __METHOD__, [ 'GROUP BY' => 'ug_group' ] );
+		$dbGroups = [];
+		foreach ( $dbGroupsRes as $row ) {
+			$dbGroups[] = (string)$row->ug_group;
+		}
+		$cfgGroupPerms = (array)$config->get( 'GroupPermissions' );
+		$allGroupNames = array_values( array_unique( array_merge( array_keys( $cfgGroupPerms ), $dbGroups ) ) );
+		sort( $allGroupNames );
+
+		$availableRights = (array)$config->get( 'AvailableRights' );
+		sort( $availableRights );
+
+		// Handle POST to generate config snippet (no direct config writes)
+		$req = $this->getRequest();
+		$snippetHtml = '';
+		if ( $req->wasPosted() && $req->getCheck( 'generate_group_snippet' ) ) {
+			$groupName = trim( $req->getText( 'group_name', '' ) );
+			$rightsPosted = (array)$req->getArray( 'rights', [] );
+			$rightsChosen = array_keys( array_filter( $rightsPosted ) );
+			if ( $groupName !== '' && $rightsChosen ) {
+				$lines = [];
+				foreach ( $rightsChosen as $r ) {
+					$lines[] = "\$wgGroupPermissions['" . addslashes( $groupName ) . "']['" . addslashes( $r ) . "'] = true;";
+				}
+				$snippet = implode( "\n", $lines );
+				$snippetHtml = '<div class="mw-message-box mw-message-box-notice" style="margin-top:1em;">'
+					. '<strong>' . $this->msg( 'admindashboard-config-snippet-title' )->escaped() . '</strong><br>'
+					. '<p>' . $this->msg( 'admindashboard-config-snippet-note' )->escaped() . '</p>'
+					. '<textarea rows="8" class="mw-ui-input" style="width:100%;font-family:monospace;">' . htmlspecialchars( $snippet ) . '</textarea>'
+					. '</div>';
+			} else {
+				$snippetHtml = '<div class="mw-message-box mw-message-box-error">' . $this->msg( 'admindashboard-config-snippet-missing' )->escaped() . '</div>';
+			}
+		}
 
 		$html = '<div class="mw-body-content">';
 		$html .= '<h1>' . $this->msg( 'admindashboard-groups-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
-		$html .= '<table class="wikitable"><tr><th>' . $this->msg( 'admindashboard-group' )->text() . '</th><th>' . $this->msg( 'admindashboard-members' )->text() . '</th></tr>';
 
-		foreach ( $result as $row ) {
-			$count = $dbr->selectField( 'user_groups', 'COUNT(*)', [ 'ug_group' => $row->ug_group ], __METHOD__ );
-			$html .= '<tr><td>' . htmlspecialchars( $row->ug_group ) . '</td><td>' . intval( $count ) . '</td></tr>';
+		// Groups table with rights and member counts
+		$html .= '<h2>' . $this->msg( 'admindashboard-group-rights' )->escaped() . '</h2>';
+		$html .= '<table class="wikitable"><tr><th>' . $this->msg( 'admindashboard-group' )->text() . '</th><th>' . $this->msg( 'admindashboard-members' )->text() . '</th><th>' . $this->msg( 'admindashboard-rights' )->text() . '</th></tr>';
+		foreach ( $allGroupNames as $group ) {
+			$memberCount = (int)$dbr->selectField( 'user_groups', 'COUNT(*)', [ 'ug_group' => $group ], __METHOD__ );
+			$rightsList = [];
+			if ( isset( $cfgGroupPerms[$group] ) && is_array( $cfgGroupPerms[$group] ) ) {
+				foreach ( $cfgGroupPerms[$group] as $right => $allowed ) {
+					if ( $allowed ) { $rightsList[] = $right; }
+				}
+			}
+			$html .= '<tr>'
+				. '<td>' . htmlspecialchars( $group ) . '</td>'
+				. '<td>' . intval( $memberCount ) . '</td>'
+				. '<td>' . ( $rightsList ? htmlspecialchars( implode( ', ', $rightsList ) ) : '<em>' . $this->msg( 'admindashboard-none' )->escaped() . '</em>' ) . '</td>'
+				. '</tr>';
+		}
+		$html .= '</table>';
+
+		// Create/modify group form (generates snippet)
+		$html .= '<h2 style="margin-top:1.5em;">' . $this->msg( 'admindashboard-create-group' )->escaped() . '</h2>';
+		$html .= '<form method="post">';
+		$html .= \Html::hidden( 'generate_group_snippet', '1' );
+		$html .= '<div class="mw-form">';
+		$html .= '<div class="field"><label for="group_name">' . $this->msg( 'admindashboard-group-name' )->escaped() . '</label> '
+			. '<input type="text" class="mw-ui-input" id="group_name" name="group_name" required placeholder="mygroup"></div>';
+		$html .= '<div class="field"><label>' . $this->msg( 'admindashboard-rights' )->escaped() . '</label>';
+		$html .= '<div class="rights-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5em;max-height:320px;overflow:auto;border:1px solid #ccc;padding:.5em;">';
+		foreach ( $availableRights as $right ) {
+			$html .= '<label style="display:flex;align-items:center;gap:.4em;">'
+				. '<input type="checkbox" name="rights[' . htmlspecialchars( $right ) . ']" value="1">'
+				. '<code>' . htmlspecialchars( $right ) . '</code>'
+				. '</label>';
+		}
+		$html .= '</div></div>';
+		$html .= '<div class="actions" style="margin-top:.8em;">'
+			. '<button type="submit" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-generate-snippet' )->escaped() . '</button>'
+			. '</div>';
+		$html .= '</div>';
+		$html .= '</form>';
+
+		// If there is a snippet to show, append it
+		if ( $snippetHtml ) {
+			$html .= $snippetHtml;
 		}
 
-		$html .= '</table></div>';
+		$html .= '</div>';
 		$out->addHTML( $html );
 	}
 

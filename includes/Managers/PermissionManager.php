@@ -50,17 +50,23 @@ class PermissionManager {
 	 * @return array
 	 */
 	private function getGroupPermissions( $group ) {
-		// This would typically come from MediaWiki's configuration
-		// For now, return some default permissions
-		$permissionMap = [
-			'*' => [ 'read', 'edit', 'createaccount' ],
-			'user' => [ 'read', 'edit', 'upload', 'move' ],
-			'autoconfirmed' => [ 'read', 'edit', 'upload', 'move', 'rollback' ],
-			'sysop' => [ 'read', 'edit', 'upload', 'move', 'delete', 'undelete', 'protect', 'block' ],
-			'bureaucrat' => [ '*' ],
-		];
-
-		return $permissionMap[$group] ?? [];
+		// Read from MediaWiki configuration (GroupPermissions)
+		try {
+			$config = MediaWikiServices::getInstance()->getMainConfig();
+			$groupPermissions = (array)$config->get( 'GroupPermissions' );
+			if ( isset( $groupPermissions[$group] ) && is_array( $groupPermissions[$group] ) ) {
+				$rights = [];
+				foreach ( $groupPermissions[$group] as $right => $allowed ) {
+					if ( $allowed ) {
+						$rights[] = $right;
+					}
+				}
+				return $rights;
+			}
+		} catch ( \Throwable $e ) {
+			// Fall through to empty list if config not available
+		}
+		return [];
 	}
 
 	/**

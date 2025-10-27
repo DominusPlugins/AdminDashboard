@@ -60,5 +60,13 @@
 	"admindashboard-cancel": "Cancel",
 	"admindashboard-save": "Save",
 	"admindashboard-block-user": "Block User",
-	"admindashboard-no-groups": "No groups assigned"
+	"admindashboard-no-groups": "No groups assigned",
+	"admindashboard-group-rights": "Groups and rights",
+	"admindashboard-rights": "Rights",
+	"admindashboard-create-group": "Create or modify a group",
+	"admindashboard-group-name": "Group name",
+	"admindashboard-generate-snippet": "Generate LocalSettings snippet",
+	"admindashboard-config-snippet-title": "Configuration snippet",
+	"admindashboard-config-snippet-note": "Copy this into your LocalSettings.php to apply these permissions. Changes do not take effect until added there.",
+	"admindashboard-config-snippet-missing": "Provide a group name and select at least one right."
 }
