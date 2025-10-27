@@ -164,7 +164,8 @@ class SpecialAdminDashboard extends SpecialPage {
 			}
 		}
 
-		$html = '<div class="mw-body-content">';
+		$html = '<style>#user-edit-modal { display: none !important; }</style>';
+		$html .= '<div class="mw-body-content">';
 		$html .= '<h1>' . $this->msg( 'admindashboard-users-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
 
@@ -339,8 +340,8 @@ class SpecialAdminDashboard extends SpecialPage {
 			button.parentElement.remove();
 		}
 
-		// Event listeners
-		document.addEventListener("DOMContentLoaded", function() {
+		// Event listeners - run immediately and on DOMContentLoaded
+		function initializeModal() {
 			// User edit link clicks
 			document.querySelectorAll(".user-edit-link").forEach(function(link) {
 				link.addEventListener("click", function(e) {
@@ -364,34 +365,50 @@ class SpecialAdminDashboard extends SpecialPage {
 			});
 
 			// Click outside modal to close
-			document.getElementById("user-edit-modal").addEventListener("click", function(e) {
-				if (e.target === this) {
-					hideUserEditModal();
-				}
-			});
+			var modal = document.getElementById("user-edit-modal");
+			if (modal) {
+				modal.addEventListener("click", function(e) {
+					if (e.target === this) {
+						hideUserEditModal();
+					}
+				});
+			}
 
 			// Add group functionality
-			document.getElementById("add-group-btn").addEventListener("click", function() {
-				const select = document.getElementById("add-group-select");
-				const groupName = select.value;
-				if (groupName) {
-					const groupsList = document.getElementById("user-groups-list");
-					const groupDiv = document.createElement("div");
-					groupDiv.className = "group-tag";
-					groupDiv.innerHTML = groupName + " <button type=\"button\" onclick=\"removeGroup(this, \'" + groupName + "\')\">×</button>";
-					groupsList.appendChild(groupDiv);
-					select.value = "";
-				}
-			});
+			var addGroupBtn = document.getElementById("add-group-btn");
+			if (addGroupBtn) {
+				addGroupBtn.addEventListener("click", function() {
+					const select = document.getElementById("add-group-select");
+					const groupName = select.value;
+					if (groupName) {
+						const groupsList = document.getElementById("user-groups-list");
+						const groupDiv = document.createElement("div");
+						groupDiv.className = "group-tag";
+						groupDiv.innerHTML = groupName + " <button type=\"button\" onclick=\"removeGroup(this, \'" + groupName + "\')\">×</button>";
+						groupsList.appendChild(groupDiv);
+						select.value = "";
+					}
+				});
+			}
 
 			// Select all checkbox functionality
-			document.getElementById("select-all").addEventListener("change", function() {
-				var checkboxes = document.querySelectorAll("input[name=\"user_ids[]\"]");
-				checkboxes.forEach(function(checkbox) {
-					checkbox.checked = document.getElementById("select-all").checked;
+			var selectAll = document.getElementById("select-all");
+			if (selectAll) {
+				selectAll.addEventListener("change", function() {
+					var checkboxes = document.querySelectorAll("input[name=\"user_ids[]\"]");
+					checkboxes.forEach(function(checkbox) {
+						checkbox.checked = document.getElementById("select-all").checked;
+					});
 				});
-			});
-		});
+			}
+		}
+
+		// Initialize when ready
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", initializeModal);
+		} else {
+			initializeModal();
+		}
 		</script>';
 
 		$out->addHTML( $html );
