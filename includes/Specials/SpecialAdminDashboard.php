@@ -57,29 +57,29 @@ class SpecialAdminDashboard extends SpecialPage {
 		$pages = $dbr->selectField( 'page', 'COUNT(*)', [ 'page_namespace' => 0 ], __METHOD__ );
 		$edits = $dbr->selectField( 'revision', 'COUNT(*)', [], __METHOD__ );
 
-		$html = '<div class="admin-dashboard">';
-		$html .= '<h1>Admin Dashboard</h1>';
+		$html = '<div class="mw-body-content">';
+		$html .= '<h1>' . $this->msg( 'admindashboard-title' )->text() . '</h1>';
 		$html .= '<div class="dashboard-grid">';
 
 		// Users card
 		$html .= '<div class="dashboard-card">';
-		$html .= '<h3>Users</h3>';
+		$html .= '<h3>' . $this->msg( 'admindashboard-users' )->text() . '</h3>';
 		$html .= '<p class="stat-value">' . intval( $users ) . '</p>';
-		$html .= '<a href="' . $this->getTitleUrl( 'users' ) . '">View Users</a>';
+		$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'users' ) ) . '" class="mw-ui-button">' . $this->msg( 'admindashboard-view-users' )->text() . '</a>';
 		$html .= '</div>';
 
 		// Pages card
 		$html .= '<div class="dashboard-card">';
-		$html .= '<h3>Pages</h3>';
+		$html .= '<h3>' . $this->msg( 'admindashboard-pages' )->text() . '</h3>';
 		$html .= '<p class="stat-value">' . intval( $pages ) . '</p>';
-		$html .= '<a href="' . $this->getTitleUrl( 'pages' ) . '">View Pages</a>';
+		$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'pages' ) ) . '" class="mw-ui-button">' . $this->msg( 'admindashboard-view-pages' )->text() . '</a>';
 		$html .= '</div>';
 
 		// Edits card
 		$html .= '<div class="dashboard-card">';
-		$html .= '<h3>Edits</h3>';
+		$html .= '<h3>' . $this->msg( 'admindashboard-edits' )->text() . '</h3>';
 		$html .= '<p class="stat-value">' . intval( $edits ) . '</p>';
-		$html .= '<a href="' . $this->getTitleUrl( 'statistics' ) . '">View Statistics</a>';
+		$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'statistics' ) ) . '" class="mw-ui-button">' . $this->msg( 'admindashboard-view-statistics' )->text() . '</a>';
 		$html .= '</div>';
 
 		$html .= '</div>';
@@ -164,34 +164,43 @@ class SpecialAdminDashboard extends SpecialPage {
 			}
 		}
 
-		$html = '<div class="admin-section">';
-		$html .= '<h1>User Management</h1>';
+		$html = '<div class="mw-body-content">';
+		$html .= '<h1>' . $this->msg( 'admindashboard-users-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
 
 		// Search form
-		$html .= '<form method="GET" style="margin-bottom: 20px;">';
-		$html .= '<input type="text" name="search" value="' . htmlspecialchars( $search ) . '" placeholder="Search users...">';
-		$html .= '<button type="submit">Search</button>';
+		$html .= '<form method="GET" class="mw-ui-form">';
+		$html .= '<div class="mw-ui-form-field">';
+		$html .= '<input type="text" name="search" value="' . htmlspecialchars( $search ) . '" placeholder="' . $this->msg( 'admindashboard-search-users' )->text() . '" class="mw-ui-input">';
+		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-search' )->text() . '</button>';
 		if ( $search ) {
-			$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'users' ) ) . '">Clear</a>';
+			$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'users' ) ) . '" class="mw-ui-button">' . $this->msg( 'admindashboard-clear' )->text() . '</a>';
 		}
+		$html .= '</div>';
 		$html .= '</form>';
 
 		// Bulk actions form
-		$html .= '<form method="POST" style="margin-bottom: 20px;">';
-		$html .= '<select name="bulk_action"><option value="">Select Action...</option><option value="promote">Promote to Sysop</option><option value="demote">Remove Sysop</option><option value="block">Block Users</option></select>';
-		$html .= '<button type="submit">Apply</button>';
+		$html .= '<form method="POST" class="mw-ui-form" style="margin: 20px 0;">';
+		$html .= '<div class="mw-ui-form-field">';
+		$html .= '<select name="bulk_action" class="mw-ui-select">';
+		$html .= '<option value="">' . $this->msg( 'admindashboard-select-action' )->text() . '</option>';
+		$html .= '<option value="promote">' . $this->msg( 'admindashboard-promote-sysop' )->text() . '</option>';
+		$html .= '<option value="demote">' . $this->msg( 'admindashboard-remove-sysop' )->text() . '</option>';
+		$html .= '<option value="block">' . $this->msg( 'admindashboard-block-users' )->text() . '</option>';
+		$html .= '</select>';
+		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-destructive">' . $this->msg( 'admindashboard-apply' )->text() . '</button>';
+		$html .= '</div>';
 		$html .= '</form>';
 
 		$html .= '<table class="wikitable sortable" style="width: 100%;">';
-		$html .= '<tr><th><input type="checkbox" id="select-all"></th><th>Username</th><th>Groups</th><th>Registered</th><th>Last Active</th><th>Email</th><th>Status</th></tr>';
+		$html .= '<tr><th><input type="checkbox" id="select-all"></th><th>' . $this->msg( 'admindashboard-username' )->text() . '</th><th>' . $this->msg( 'admindashboard-groups' )->text() . '</th><th>' . $this->msg( 'admindashboard-registered' )->text() . '</th><th>' . $this->msg( 'admindashboard-last-active' )->text() . '</th><th>' . $this->msg( 'admindashboard-email' )->text() . '</th><th>' . $this->msg( 'admindashboard-status' )->text() . '</th></tr>';
 
 		foreach ( $users as $userId => $user ) {
 			$blocked = isset( $blockInfo[$userId] ) ? 'Blocked' : 'Active';
-			$blockClass = $blocked === 'Blocked' ? ' style="background-color: #ffcccc;"' : '';
+			$blockClass = $blocked === 'Blocked' ? ' class="mw-ui-destructive"' : '';
 			
 			$userLink = $GLOBALS['wgScriptPath'] . '/index.php/User:' . urlencode( $user['name'] );
-			$groups = !empty( $user['groups'] ) ? implode( ', ', array_map( 'htmlspecialchars', $user['groups'] ) ) : 'None';
+			$groups = !empty( $user['groups'] ) ? implode( ', ', array_map( 'htmlspecialchars', $user['groups'] ) ) : $this->msg( 'admindashboard-none' )->text();
 			
 			$html .= '<tr' . $blockClass . '>';
 			$html .= '<td><input type="checkbox" name="user_ids[]" value="' . intval( $userId ) . '"></td>';
@@ -199,15 +208,15 @@ class SpecialAdminDashboard extends SpecialPage {
 			$html .= '<td>' . $groups . '</td>';
 			$html .= '<td>' . substr( $user['registration'], 0, 10 ) . '</td>';
 			$html .= '<td>' . substr( $user['touched'], 0, 10 ) . '</td>';
-			$html .= '<td>' . htmlspecialchars( $user['email'] ?? 'N/A' ) . '</td>';
+			$html .= '<td>' . htmlspecialchars( $user['email'] ?? $this->msg( 'admindashboard-na' )->text() ) . '</td>';
 			$html .= '<td>';
 			if ( $blocked === 'Blocked' && isset( $blockInfo[$userId] ) ) {
-				$html .= '<span style="color: red; font-weight: bold;">Blocked</span>';
+				$html .= '<span class="mw-ui-destructive">' . $this->msg( 'admindashboard-blocked' )->text() . '</span>';
 				if ( $blockInfo[$userId]['reason'] ) {
 					$html .= '<br><small>' . htmlspecialchars( $blockInfo[$userId]['reason'] ) . '</small>';
 				}
 			} else {
-				$html .= '<span style="color: green;">Active</span>';
+				$html .= '<span class="mw-ui-progressive">' . $this->msg( 'admindashboard-active' )->text() . '</span>';
 			}
 			$html .= '</td>';
 			$html .= '</tr>';
@@ -244,10 +253,10 @@ class SpecialAdminDashboard extends SpecialPage {
 			[ 'ORDER BY' => 'page_touched DESC', 'LIMIT' => 50 ]
 		);
 
-		$html = '<div class="admin-section">';
-		$html .= '<h1>Pages</h1>';
+		$html = '<div class="mw-body-content">';
+		$html .= '<h1>' . $this->msg( 'admindashboard-pages-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
-		$html .= '<table class="wikitable sortable"><tr><th>Title</th><th>Last Modified</th></tr>';
+		$html .= '<table class="wikitable sortable"><tr><th>' . $this->msg( 'admindashboard-title' )->text() . '</th><th>' . $this->msg( 'admindashboard-last-modified' )->text() . '</th></tr>';
 
 		foreach ( $result as $row ) {
 			// Build the page URL properly
@@ -269,10 +278,10 @@ class SpecialAdminDashboard extends SpecialPage {
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 		$result = $dbr->select( 'user_groups', [ 'ug_group' ], [], __METHOD__, [ 'GROUP BY' => 'ug_group' ] );
 
-		$html = '<div class="admin-section">';
-		$html .= '<h1>User Groups</h1>';
+		$html = '<div class="mw-body-content">';
+		$html .= '<h1>' . $this->msg( 'admindashboard-groups-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
-		$html .= '<table class="wikitable"><tr><th>Group</th><th>Members</th></tr>';
+		$html .= '<table class="wikitable"><tr><th>' . $this->msg( 'admindashboard-group' )->text() . '</th><th>' . $this->msg( 'admindashboard-members' )->text() . '</th></tr>';
 
 		foreach ( $result as $row ) {
 			$count = $dbr->selectField( 'user_groups', 'COUNT(*)', [ 'ug_group' => $row->ug_group ], __METHOD__ );
@@ -296,8 +305,8 @@ class SpecialAdminDashboard extends SpecialPage {
 			'Files' => $dbr->selectField( 'image', 'COUNT(*)', [], __METHOD__ ),
 		];
 
-		$html = '<div class="admin-section">';
-		$html .= '<h1>Statistics</h1>';
+		$html = '<div class="mw-body-content">';
+		$html .= '<h1>' . $this->msg( 'admindashboard-statistics-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
 		$html .= '<div class="statistics-grid">';
 
@@ -310,15 +319,15 @@ class SpecialAdminDashboard extends SpecialPage {
 	}
 
 	private function makeNav() {
-		$nav = '<nav class="admin-nav">';
+		$nav = '<div class="mw-ui-tabs">';
 		$nav .= '<ul>';
-		$nav .= '<li><a href="' . $this->getTitleUrl( 'overview' ) . '">Overview</a></li>';
-		$nav .= '<li><a href="' . $this->getTitleUrl( 'users' ) . '">Users</a></li>';
-		$nav .= '<li><a href="' . $this->getTitleUrl( 'pages' ) . '">Pages</a></li>';
-		$nav .= '<li><a href="' . $this->getTitleUrl( 'permissions' ) . '">Permissions</a></li>';
-		$nav .= '<li><a href="' . $this->getTitleUrl( 'statistics' ) . '">Statistics</a></li>';
+		$nav .= '<li><a href="' . htmlspecialchars( $this->getTitleUrl( 'overview' ) ) . '">' . $this->msg( 'admindashboard-overview' )->text() . '</a></li>';
+		$nav .= '<li><a href="' . htmlspecialchars( $this->getTitleUrl( 'users' ) ) . '">' . $this->msg( 'admindashboard-users' )->text() . '</a></li>';
+		$nav .= '<li><a href="' . htmlspecialchars( $this->getTitleUrl( 'pages' ) ) . '">' . $this->msg( 'admindashboard-pages' )->text() . '</a></li>';
+		$nav .= '<li><a href="' . htmlspecialchars( $this->getTitleUrl( 'permissions' ) ) . '">' . $this->msg( 'admindashboard-permissions' )->text() . '</a></li>';
+		$nav .= '<li><a href="' . htmlspecialchars( $this->getTitleUrl( 'statistics' ) ) . '">' . $this->msg( 'admindashboard-statistics' )->text() . '</a></li>';
 		$nav .= '</ul>';
-		$nav .= '</nav>';
+		$nav .= '</div>';
 		return $nav;
 	}
 
