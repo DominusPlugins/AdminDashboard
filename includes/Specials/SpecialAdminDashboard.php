@@ -273,8 +273,8 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '<table class="wikitable sortable"><tr><th>' . $this->msg( 'admindashboard-title' )->text() . '</th><th>' . $this->msg( 'admindashboard-last-modified' )->text() . '</th></tr>';
 
 		foreach ( $result as $row ) {
-			// Build the page URL properly using Title object
-			$title = \Title::makeTitleSafe( $row->page_namespace, $row->page_title );
+			// Build the page URL properly using Title object (namespaced for MW 1.36+)
+			$title = \MediaWiki\Title\Title::makeTitleSafe( $row->page_namespace, $row->page_title );
 			if ( !$title ) {
 				continue;
 			}
