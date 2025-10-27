@@ -94,20 +94,136 @@ class SpecialAdminDashboard extends SpecialPage {
 		$out->setPageTitle( 'User Management' );
 
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
-		$result = $dbr->select( 'user', [ 'user_name', 'user_registration', 'user_touched' ], [], __METHOD__, [ 'LIMIT' => 100 ] );
-
-		$html = '<div class="admin-section">';
-		$html .= '<h1>Users</h1>';
-		$html .= $this->makeNav();
-		$html .= '<table class="wikitable sortable"><tr><th>Username</th><th>Registered</th><th>Last Active</th></tr>';
-
-		foreach ( $result as $row ) {
-			$html .= '<tr><td>' . htmlspecialchars( $row->user_name ) . '</td>';
-			$html .= '<td>' . substr( $row->user_registration, 0, 10 ) . '</td>';
-			$html .= '<td>' . substr( $row->user_touched, 0, 10 ) . '</td></tr>';
+		
+		// Get search parameter if provided
+		$search = $this->getRequest()->getText( 'search', '' );
+		$where = [];
+		if ( $search ) {
+			$where['user_name'] = $dbr->buildLike( $dbr->escapeLike( $search ), $dbr->anyString() );
 		}
 
-		$html .= '</table></div>';
+		// Get users with additional info
+		$result = $dbr->select(
+			[ 'user', 'user_groups' ],
+			[ 'user_id', 'user_name', 'user_registration', 'user_touched', 'user_email', 'ug_group' ],
+			$where,
+			__METHOD__,
+			[ 'LIMIT' => 200, 'ORDER BY' => 'user_name ASC' ],
+			[ 'user_groups' => [ 'LEFT JOIN', 'user_id = ug_user' ] ]
+		);
+
+		// Process results and group by user
+		$users = [];
+		foreach ( $result as $row ) {
+			if ( !isset( $users[$row->user_id] ) ) {
+				$users[$row->user_id] = [
+					'id' => $row->user_id,
+					'name' => $row->user_name,
+					'registration' => $row->user_registration,
+					'touched' => $row->user_touched,
+					'email' => $row->user_email,
+					'groups' => []
+				];
+			}
+			if ( $row->ug_group ) {
+				$users[$row->user_id]['groups'][] = $row->ug_group;
+			}
+		}
+
+		// Get edit counts for all users in one query
+		$userIds = array_keys( $users );
+		$editCounts = [];
+		if ( !empty( $userIds ) ) {
+			$editResult = $dbr->select(
+				'revision',
+				[ 'rev_user', 'COUNT(*) as edit_count' ],
+				[ 'rev_user' => $userIds ],
+				__METHOD__,
+				[ 'GROUP BY' => 'rev_user' ]
+			);
+			foreach ( $editResult as $row ) {
+				$editCounts[$row->rev_user] = $row->edit_count;
+			}
+		}
+
+		// Get block information
+		$blockInfo = [];
+		if ( !empty( $userIds ) ) {
+			$blockResult = $dbr->select(
+				'ipblocks',
+				[ 'ipb_user', 'ipb_reason', 'ipb_expiry' ],
+				[ 'ipb_user' => $userIds ],
+				__METHOD__
+			);
+			foreach ( $blockResult as $row ) {
+				$blockInfo[$row->ipb_user] = [ 'reason' => $row->ipb_reason, 'expiry' => $row->ipb_expiry ];
+			}
+		}
+
+		$html = '<div class="admin-section">';
+		$html .= '<h1>User Management</h1>';
+		$html .= $this->makeNav();
+
+		// Search form
+		$html .= '<form method="GET" style="margin-bottom: 20px;">';
+		$html .= '<input type="text" name="search" value="' . htmlspecialchars( $search ) . '" placeholder="Search users...">';
+		$html .= '<button type="submit">Search</button>';
+		if ( $search ) {
+			$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'users' ) ) . '">Clear</a>';
+		}
+		$html .= '</form>';
+
+		// Bulk actions form
+		$html .= '<form method="POST" style="margin-bottom: 20px;">';
+		$html .= '<select name="bulk_action"><option value="">Select Action...</option><option value="promote">Promote to Sysop</option><option value="demote">Remove Sysop</option><option value="block">Block Users</option></select>';
+		$html .= '<button type="submit">Apply</button>';
+		$html .= '</form>';
+
+		$html .= '<table class="wikitable sortable" style="width: 100%;">';
+		$html .= '<tr><th><input type="checkbox" id="select-all"></th><th>Username</th><th>Groups</th><th>Edits</th><th>Registered</th><th>Last Active</th><th>Email</th><th>Status</th></tr>';
+
+		foreach ( $users as $userId => $user ) {
+			$editCount = $editCounts[$userId] ?? 0;
+			$blocked = isset( $blockInfo[$userId] ) ? 'Blocked' : 'Active';
+			$blockClass = $blocked === 'Blocked' ? ' style="background-color: #ffcccc;"' : '';
+			
+			$userLink = $GLOBALS['wgScriptPath'] . '/index.php/User:' . urlencode( $user['name'] );
+			$groups = !empty( $user['groups'] ) ? implode( ', ', array_map( 'htmlspecialchars', $user['groups'] ) ) : 'None';
+			
+			$html .= '<tr' . $blockClass . '>';
+			$html .= '<td><input type="checkbox" name="user_ids[]" value="' . intval( $userId ) . '"></td>';
+			$html .= '<td><a href="' . htmlspecialchars( $userLink ) . '">' . htmlspecialchars( $user['name'] ) . '</a></td>';
+			$html .= '<td>' . $groups . '</td>';
+			$html .= '<td>' . intval( $editCount ) . '</td>';
+			$html .= '<td>' . substr( $user['registration'], 0, 10 ) . '</td>';
+			$html .= '<td>' . substr( $user['touched'], 0, 10 ) . '</td>';
+			$html .= '<td>' . htmlspecialchars( $user['email'] ?? 'N/A' ) . '</td>';
+			$html .= '<td>';
+			if ( $blocked === 'Blocked' && isset( $blockInfo[$userId] ) ) {
+				$html .= '<span style="color: red; font-weight: bold;">Blocked</span>';
+				if ( $blockInfo[$userId]['reason'] ) {
+					$html .= '<br><small>' . htmlspecialchars( $blockInfo[$userId]['reason'] ) . '</small>';
+				}
+			} else {
+				$html .= '<span style="color: green;">Active</span>';
+			}
+			$html .= '</td>';
+			$html .= '</tr>';
+		}
+
+		$html .= '</table>';
+		$html .= '</div>';
+
+		// Add JavaScript for checkbox handling
+		$html .= '<script>
+		document.getElementById("select-all").addEventListener("change", function() {
+			var checkboxes = document.querySelectorAll("input[name=\"user_ids[]\"]");
+			checkboxes.forEach(function(checkbox) {
+				checkbox.checked = document.getElementById("select-all").checked;
+			});
+		});
+		</script>';
+
 		$out->addHTML( $html );
 	}
 
