@@ -156,6 +156,44 @@
 			}
 		} );
 
+		// Helpers to update the table UI without a full page refresh
+		function findRowByUserId( userId ) {
+			return document.querySelector( 'tr[data-user-id="' + String( userId ) + '"]' );
+		}
+
+		function findRowByUserName( name ) {
+			const rows = document.querySelectorAll( 'table.wikitable tr[data-user-name]' );
+			for ( var i = 0; i < rows.length; i++ ) {
+				if ( rows[i].dataset.userName === name ) return rows[i];
+			}
+			return null;
+		}
+
+		function renderGroupsCell( row, groupsArr ) {
+			if ( !row ) return;
+			row.dataset.userGroups = JSON.stringify( groupsArr || [] );
+			var cell = row.cells && row.cells[2];
+			if ( cell ) {
+				cell.textContent = ( groupsArr && groupsArr.length ) ? groupsArr.join( ', ' ) : 'None';
+			}
+		}
+
+		function setBlocked( row, blocked, reason ) {
+			if ( !row ) return;
+			var statusCell = row.cells && row.cells[6];
+			if ( blocked ) {
+				row.classList.add( 'mw-ui-destructive' );
+				if ( statusCell ) {
+					statusCell.innerHTML = '<span class="mw-ui-destructive">Blocked</span>' + ( reason ? '<br><small>' + reason.replace( /</g, '&lt;' ) + '</small>' : '' );
+				}
+			} else {
+				row.classList.remove( 'mw-ui-destructive' );
+				if ( statusCell ) {
+					statusCell.innerHTML = '<span class="mw-ui-progressive">Active</span>';
+				}
+			}
+		}
+
 		// Helper: POST with a specific token type and retry once on badtoken
 		function apiPostWithToken( params, tokenType, retry ) {
 			retry = typeof retry === 'number' ? retry : 1;
@@ -216,6 +254,7 @@
 				saveBtn.textContent = 'Saving…';
 			}
 			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
+			const userId = ( document.getElementById( 'edit-user-id' ) || {} ).value || '';
 			const initGroupsStr = ( document.getElementById( 'initial-groups' ) || {} ).value || '[]';
 			let initGroups = [];
 			try { initGroups = JSON.parse( initGroupsStr ); } catch ( _e ) {}
@@ -246,6 +285,11 @@
 			apiPostWithToken( params, 'userrights' ).done( function ( data ) {
 				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] userrights success', data );
 				notify( 'User groups updated', { type: 'success' } );
+				// Update table row groups immediately
+				try {
+					var row = userId ? findRowByUserId( userId ) : findRowByUserName( username );
+					renderGroupsCell( row, nowGroups );
+				} catch ( _e ) {}
 				hideUserEditModal();
 			} ).fail( function ( err ) {
 				if ( typeof console !== 'undefined' ) console.error( '[AdminDashboard] userrights failed', err );
@@ -267,6 +311,7 @@
 		$( document ).on( 'click', '#block-user-btn', function () {
 			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
 			if ( !username ) { notify( 'No username to block', { type: 'error' } ); return; }
+			const userId = ( document.getElementById( 'edit-user-id' ) || {} ).value || '';
 			apiPostWithToken( {
 				action: 'block',
 				user: username,
@@ -276,6 +321,10 @@
 				autoblock: 1
 			}, 'csrf' ).done( function () {
 				notify( 'User blocked', { type: 'success' } );
+				try {
+					var row = userId ? findRowByUserId( userId ) : findRowByUserName( username );
+					setBlocked( row, true, 'Blocked via AdminDashboard' );
+				} catch ( _e ) {}
 				hideUserEditModal();
 			} ).fail( function ( err ) {
 				notify( 'Failed to block user: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
@@ -314,6 +363,27 @@
 				} else {
 					notify( 'Bulk action completed', { type: 'success' } );
 				}
+				// Update table rows to reflect the bulk action
+				try {
+					ids.forEach( function ( u, idx ) {
+						if ( results[idx].status !== 'fulfilled' ) return;
+						var row = findRowByUserName( u.name );
+						if ( !row ) return;
+						if ( actionVal === 'promote' ) {
+							var groups = [];
+							try { groups = JSON.parse( row.dataset.userGroups || '[]' ); } catch ( _e ) {}
+							if ( groups.indexOf( 'sysop' ) === -1 ) groups.push( 'sysop' );
+							renderGroupsCell( row, groups );
+						} else if ( actionVal === 'demote' ) {
+							var groups2 = [];
+							try { groups2 = JSON.parse( row.dataset.userGroups || '[]' ); } catch ( _e2 ) {}
+							groups2 = groups2.filter( function ( g ) { return g !== 'sysop'; } );
+							renderGroupsCell( row, groups2 );
+						} else if ( actionVal === 'block' ) {
+							setBlocked( row, true, 'Bulk block (AdminDashboard)' );
+						}
+					} );
+				} catch ( _e ) {}
 			} );
 		} );
 
