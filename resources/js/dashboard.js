@@ -156,9 +156,10 @@
 			}
 		} );
 
-		// Helper: POST with fresh CSRF and retry once on badtoken
-		function apiPostWithCsrf( params, retry ) {
+		// Helper: POST with a specific token type and retry once on badtoken
+		function apiPostWithToken( params, tokenType, retry ) {
 			retry = typeof retry === 'number' ? retry : 1;
+			tokenType = tokenType || 'csrf';
 			const api = new mw.Api();
 			const base = Object.assign( { format: 'json', assert: 'user', origin: ( window && window.location && window.location.origin ) ? window.location.origin : undefined }, params );
 			var dfd = $.Deferred();
@@ -171,7 +172,7 @@
 					const code = err && err.error && err.error.code;
 					if ( code === 'badtoken' && mayRetry && retry > 0 ) {
 						if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] badtoken, fetching fresh token and retrying' );
-						api.getToken( 'csrf' ).done( function ( fresh ) {
+						api.getToken( tokenType ).done( function ( fresh ) {
 							postWith( fresh, false );
 						} ).fail( function ( e2 ) {
 							dfd.reject( e2 );
@@ -183,14 +184,19 @@
 			}
 
 			try {
-				var cached = mw.user && mw.user.tokens && mw.user.tokens.get ? mw.user.tokens.get( 'csrfToken' ) : null;
+				var cached = null;
+				if ( mw.user && mw.user.tokens && mw.user.tokens.get ) {
+					// mw.user.tokens.get expects keys like 'csrfToken', 'userrightsToken'
+					var key = tokenType + 'Token';
+					cached = mw.user.tokens.get( key );
+				}
 				if ( cached ) {
 					postWith( cached, true );
 				} else {
-					api.getToken( 'csrf' ).done( function ( token ) { postWith( token, true ); } ).fail( function ( e ) { dfd.reject( e ); } );
+					api.getToken( tokenType ).done( function ( token ) { postWith( token, true ); } ).fail( function ( e ) { dfd.reject( e ); } );
 				}
 			} catch ( _e ) {
-				api.getToken( 'csrf' ).done( function ( token ) { postWith( token, true ); } ).fail( function ( e ) { dfd.reject( e ); } );
+				api.getToken( tokenType ).done( function ( token ) { postWith( token, true ); } ).fail( function ( e ) { dfd.reject( e ); } );
 			}
 
 			return dfd.promise();
@@ -237,7 +243,7 @@
 			};
 			if ( d.add.length ) { params.add = d.add.join( '|' ); }
 			if ( d.remove.length ) { params.remove = d.remove.join( '|' ); }
-			apiPostWithCsrf( params ).done( function ( data ) {
+			apiPostWithToken( params, 'userrights' ).done( function ( data ) {
 				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] userrights success', data );
 				notify( 'User groups updated', { type: 'success' } );
 				hideUserEditModal();
@@ -261,14 +267,14 @@
 		$( document ).on( 'click', '#block-user-btn', function () {
 			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
 			if ( !username ) { notify( 'No username to block', { type: 'error' } ); return; }
-			apiPostWithCsrf( {
+			apiPostWithToken( {
 				action: 'block',
 				user: username,
 				reason: 'Blocked via AdminDashboard',
 				expiry: '2 weeks',
 				nocreate: 1,
 				autoblock: 1
-			} ).done( function () {
+			}, 'csrf' ).done( function () {
 				notify( 'User blocked', { type: 'success' } );
 				hideUserEditModal();
 			} ).fail( function ( err ) {
@@ -292,11 +298,11 @@
 
 			const calls = ids.map( function ( u ) {
 				if ( actionVal === 'promote' ) {
-					return new Promise( function ( resolve, reject ) { apiPostWithCsrf( { action: 'userrights', user: u.name, add: 'sysop' } ).done( resolve ).fail( reject ); } );
+					return new Promise( function ( resolve, reject ) { apiPostWithToken( { action: 'userrights', user: u.name, add: 'sysop' }, 'userrights' ).done( resolve ).fail( reject ); } );
 				} else if ( actionVal === 'demote' ) {
-					return new Promise( function ( resolve, reject ) { apiPostWithCsrf( { action: 'userrights', user: u.name, remove: 'sysop' } ).done( resolve ).fail( reject ); } );
+					return new Promise( function ( resolve, reject ) { apiPostWithToken( { action: 'userrights', user: u.name, remove: 'sysop' }, 'userrights' ).done( resolve ).fail( reject ); } );
 				} else if ( actionVal === 'block' ) {
-					return new Promise( function ( resolve, reject ) { apiPostWithCsrf( { action: 'block', user: u.name, reason: 'Bulk block (AdminDashboard)', expiry: '2 weeks', nocreate: 1, autoblock: 1 } ).done( resolve ).fail( reject ); } );
+					return new Promise( function ( resolve, reject ) { apiPostWithToken( { action: 'block', user: u.name, reason: 'Bulk block (AdminDashboard)', expiry: '2 weeks', nocreate: 1, autoblock: 1 }, 'csrf' ).done( resolve ).fail( reject ); } );
 				}
 				return Promise.resolve();
 			} );
