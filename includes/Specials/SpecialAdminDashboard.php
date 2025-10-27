@@ -130,30 +130,8 @@ class SpecialAdminDashboard extends SpecialPage {
 			}
 		}
 
-		// Get edit counts for all users in one query
-		$userIds = array_keys( $users );
-		$editCounts = [];
-		if ( !empty( $userIds ) ) {
-			// Try to get edit counts using user_editcount if available, otherwise set to 0
-			try {
-				$editCountResult = $dbr->select(
-					'user',
-					[ 'user_id', 'user_editcount' ],
-					[ 'user_id' => $userIds ],
-					__METHOD__
-				);
-				foreach ( $editCountResult as $row ) {
-					$editCounts[$row->user_id] = $row->user_editcount ?? 0;
-				}
-			} catch ( \Exception $e ) {
-				// If user_editcount doesn't exist, just use 0 for all
-				foreach ( $userIds as $id ) {
-					$editCounts[$id] = 0;
-				}
-			}
-		}
-
 		// Get block information
+		$userIds = array_keys( $users );
 		$blockInfo = [];
 		if ( !empty( $userIds ) ) {
 			$blockResult = $dbr->select(
@@ -187,10 +165,9 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '</form>';
 
 		$html .= '<table class="wikitable sortable" style="width: 100%;">';
-		$html .= '<tr><th><input type="checkbox" id="select-all"></th><th>Username</th><th>Groups</th><th>Edits</th><th>Registered</th><th>Last Active</th><th>Email</th><th>Status</th></tr>';
+		$html .= '<tr><th><input type="checkbox" id="select-all"></th><th>Username</th><th>Groups</th><th>Registered</th><th>Last Active</th><th>Email</th><th>Status</th></tr>';
 
 		foreach ( $users as $userId => $user ) {
-			$editCount = $editCounts[$userId] ?? 0;
 			$blocked = isset( $blockInfo[$userId] ) ? 'Blocked' : 'Active';
 			$blockClass = $blocked === 'Blocked' ? ' style="background-color: #ffcccc;"' : '';
 			
@@ -201,7 +178,6 @@ class SpecialAdminDashboard extends SpecialPage {
 			$html .= '<td><input type="checkbox" name="user_ids[]" value="' . intval( $userId ) . '"></td>';
 			$html .= '<td><a href="' . htmlspecialchars( $userLink ) . '">' . htmlspecialchars( $user['name'] ) . '</a></td>';
 			$html .= '<td>' . $groups . '</td>';
-			$html .= '<td>' . intval( $editCount ) . '</td>';
 			$html .= '<td>' . substr( $user['registration'], 0, 10 ) . '</td>';
 			$html .= '<td>' . substr( $user['touched'], 0, 10 ) . '</td>';
 			$html .= '<td>' . htmlspecialchars( $user['email'] ?? 'N/A' ) . '</td>';
