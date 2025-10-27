@@ -80,6 +80,95 @@
 			}
 		} );
 
+		// Save user (groups) via API userrights
+		$( document ).on( 'submit', '#user-edit-form', function ( e ) {
+			e.preventDefault();
+			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
+			const initGroupsStr = ( document.getElementById( 'initial-groups' ) || {} ).value || '[]';
+			let initGroups = [];
+			try { initGroups = JSON.parse( initGroupsStr ); } catch ( _e ) {}
+			const nowGroups = getGroupsFromUI();
+			const d = diffGroups( initGroups, nowGroups );
+			if ( !username ) { mw.notify( 'No username found', { type: 'error' } ); return; }
+
+			if ( d.add.length === 0 && d.remove.length === 0 ) {
+				mw.notify( 'No changes to save', { type: 'info' } );
+				hideUserEditModal();
+				return;
+			}
+
+			const api = new mw.Api();
+			api.postWithToken( 'csrf', {
+				action: 'userrights',
+				format: 'json',
+				user: username,
+				add: d.add.join( '|' ),
+				remove: d.remove.join( '|' )
+			} ).done( function () {
+				mw.notify( 'User groups updated', { type: 'success' } );
+				hideUserEditModal();
+			} ).fail( function ( err ) {
+				mw.notify( 'Failed to update groups: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
+			} );
+		} );
+
+		// Block user via core API
+		$( document ).on( 'click', '#block-user-btn', function () {
+			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
+			if ( !username ) { mw.notify( 'No username to block', { type: 'error' } ); return; }
+			const api = new mw.Api();
+			api.postWithToken( 'csrf', {
+				action: 'block',
+				user: username,
+				reason: 'Blocked via AdminDashboard',
+				expiry: '2 weeks',
+				nocreate: 1,
+				autoblock: 1,
+				format: 'json'
+			} ).done( function () {
+				mw.notify( 'User blocked', { type: 'success' } );
+				hideUserEditModal();
+			} ).fail( function ( err ) {
+				mw.notify( 'Failed to block user: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
+			} );
+		} );
+
+		// Bulk actions
+		$( document ).on( 'click', '#bulk-apply-btn', function () {
+			const actionSel = document.getElementById( 'bulk-action-select' );
+			const actionVal = actionSel ? actionSel.value : '';
+			if ( !actionVal ) { mw.notify( 'Select a bulk action', { type: 'warn' } ); return; }
+			const ids = Array.from( document.querySelectorAll( 'input[name="user_ids[]"]:checked' ) )
+				.map( function ( cb ) { return cb.closest( 'tr' ); } )
+				.filter( Boolean )
+				.map( function ( row ) { return {
+					name: row.dataset.userName
+				}; } )
+				.filter( function ( u ) { return !!u.name; } );
+			if ( ids.length === 0 ) { mw.notify( 'Select at least one user', { type: 'warn' } ); return; }
+
+			const api = new mw.Api();
+			const calls = ids.map( function ( u ) {
+				if ( actionVal === 'promote' ) {
+					return api.postWithToken( 'csrf', { action: 'userrights', user: u.name, add: 'sysop', format: 'json' } );
+				} else if ( actionVal === 'demote' ) {
+					return api.postWithToken( 'csrf', { action: 'userrights', user: u.name, remove: 'sysop', format: 'json' } );
+				} else if ( actionVal === 'block' ) {
+					return api.postWithToken( 'csrf', { action: 'block', user: u.name, reason: 'Bulk block (AdminDashboard)', expiry: '2 weeks', nocreate: 1, autoblock: 1, format: 'json' } );
+				}
+				return Promise.resolve();
+			} );
+
+			Promise.allSettled( calls ).then( function ( results ) {
+				const failed = results.filter( function ( r ) { return r.status === 'rejected'; } );
+				if ( failed.length ) {
+					mw.notify( 'Some actions failed (' + failed.length + ')', { type: 'warn' } );
+				} else {
+					mw.notify( 'Bulk action completed', { type: 'success' } );
+				}
+			} );
+		} );
+
 		// Add group button
 		$( document ).on( 'click', '#add-group-btn', function () {
 			const select = document.getElementById( 'add-group-select' );
@@ -144,6 +233,12 @@
 			}
 		}
 
+		// Store initial groups for diffing on save
+		try {
+			const initEl = document.getElementById( 'initial-groups' );
+			if ( initEl ) initEl.value = JSON.stringify( Array.isArray( user.groups ) ? user.groups : [] );
+		} catch ( e ) {}
+
 		if ( modal ) {
 			modal.style.display = 'block';
 		}
@@ -154,6 +249,22 @@
 		if ( modal ) {
 			modal.style.display = 'none';
 		}
+	}
+
+	function getGroupsFromUI() {
+		const list = document.getElementById( 'user-groups-list' );
+		if ( !list ) return [];
+		return Array.from( list.querySelectorAll( '.group-tag' ) )
+			.map( function ( el ) { return el.textContent.replace( '×', '' ).trim(); } )
+			.filter( Boolean );
+	}
+
+	function diffGroups( before, after ) {
+		const b = new Set( before );
+		const a = new Set( after );
+		const add = Array.from( a ).filter( function ( g ) { return !b.has( g ); } );
+		const remove = Array.from( b ).filter( function ( g ) { return !a.has( g ); } );
+		return { add: add, remove: remove };
 	}
 
 	/**

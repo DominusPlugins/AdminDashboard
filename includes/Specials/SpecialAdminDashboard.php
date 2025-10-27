@@ -172,7 +172,7 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '<option value="demote">' . $this->msg( 'admindashboard-remove-sysop' )->text() . '</option>';
 		$html .= '<option value="block">' . $this->msg( 'admindashboard-block-users' )->text() . '</option>';
 		$html .= '</select>';
-		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-destructive">' . $this->msg( 'admindashboard-apply' )->text() . '</button>';
+		$html .= '<button type="button" id="bulk-apply-btn" class="mw-ui-button mw-ui-button-destructive">' . $this->msg( 'admindashboard-apply' )->text() . '</button>';
 		$html .= '</div>';
 		$html .= '</div>';
 
@@ -226,6 +226,7 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '</div>';
 		$html .= '<form id="user-edit-form">';
 		$html .= '<input type="hidden" id="edit-user-id" name="user_id">';
+		$html .= '<input type="hidden" id="initial-groups" value="[]">';
 		$html .= '<fieldset>';
 		$html .= '<legend>' . $this->msg( 'admindashboard-user-details' )->text() . '</legend>';
 		$html .= '<div><label for="edit-username">' . $this->msg( 'admindashboard-username' )->text() . ':</label><input type="text" id="edit-username" class="mw-ui-input" readonly></div>';

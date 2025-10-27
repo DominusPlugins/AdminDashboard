@@ -24,7 +24,9 @@
 		"ext.AdminDashboard.scripts": {
 			"scripts": [ "resources/js/dashboard.js" ],
 			"dependencies": [
-				"jquery"
+				"jquery",
+				"mediawiki.api",
+				"mediawiki.notify"
 			]
 		}
 	},
