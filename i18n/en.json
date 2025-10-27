@@ -68,5 +68,11 @@
 	"admindashboard-generate-snippet": "Generate LocalSettings snippet",
 	"admindashboard-config-snippet-title": "Configuration snippet",
 	"admindashboard-config-snippet-note": "Copy this into your LocalSettings.php to apply these permissions. Changes do not take effect until added there.",
-	"admindashboard-config-snippet-missing": "Provide a group name and select at least one right."
+	"admindashboard-config-snippet-missing": "Provide a group name and select at least one right.",
+	"admindashboard-actions": "Actions",
+	"admindashboard-edit": "Edit",
+	"admindashboard-locked": "Locked",
+	"admindashboard-edit-group": "Edit group",
+	"admindashboard-edit-group-locked": "This group is locked and cannot be edited here.",
+	"admindashboard-generate-update-snippet": "Generate update snippet"
 }

@@ -335,17 +335,31 @@ class SpecialAdminDashboard extends SpecialPage {
 			$groupName = trim( $req->getText( 'group_name', '' ) );
 			$rightsPosted = (array)$req->getArray( 'rights', [] );
 			$rightsChosen = array_keys( array_filter( $rightsPosted ) );
-			if ( $groupName !== '' && $rightsChosen ) {
+			$lockedGroups = [ 'sysop', 'interface-admin' ];
+			if ( in_array( $groupName, $lockedGroups, true ) ) {
+				$snippetHtml = '<div class="mw-message-box mw-message-box-error" style="margin-top:1em;">' . $this->msg( 'admindashboard-edit-group-locked' )->escaped() . '</div>';
+			} elseif ( $groupName !== '' ) {
 				$lines = [];
+				$existing = isset( $cfgGroupPerms[$groupName] ) && is_array( $cfgGroupPerms[$groupName] ) ? $cfgGroupPerms[$groupName] : [];
+				$currentTrue = [];
+				foreach ( $existing as $r => $allowed ) { if ( $allowed ) { $currentTrue[] = (string)$r; } }
+				$toDisable = array_values( array_diff( $currentTrue, $rightsChosen ) );
 				foreach ( $rightsChosen as $r ) {
 					$lines[] = "\$wgGroupPermissions['" . addslashes( $groupName ) . "']['" . addslashes( $r ) . "'] = true;";
 				}
-				$snippet = implode( "\n", $lines );
-				$snippetHtml = '<div class="mw-message-box mw-message-box-notice" style="margin-top:1em;">'
-					. '<strong>' . $this->msg( 'admindashboard-config-snippet-title' )->escaped() . '</strong><br>'
-					. '<p>' . $this->msg( 'admindashboard-config-snippet-note' )->escaped() . '</p>'
-					. '<textarea rows="8" class="mw-ui-input" style="width:100%;font-family:monospace;">' . htmlspecialchars( $snippet ) . '</textarea>'
-					. '</div>';
+				foreach ( $toDisable as $r ) {
+					$lines[] = "\$wgGroupPermissions['" . addslashes( $groupName ) . "']['" . addslashes( $r ) . "'] = false;";
+				}
+				if ( $lines ) {
+					$snippet = implode( "\n", $lines );
+					$snippetHtml = '<div class="mw-message-box mw-message-box-notice" style="margin-top:1em;">'
+						. '<strong>' . $this->msg( 'admindashboard-config-snippet-title' )->escaped() . '</strong><br>'
+						. '<p>' . $this->msg( 'admindashboard-config-snippet-note' )->escaped() . '</p>'
+						. '<textarea rows="8" class="mw-ui-input" style="width:100%;font-family:monospace;">' . htmlspecialchars( $snippet ) . '</textarea>'
+						. '</div>';
+				} else {
+					$snippetHtml = '<div class="mw-message-box mw-message-box-error">' . $this->msg( 'admindashboard-config-snippet-missing' )->escaped() . '</div>';
+				}
 			} else {
 				$snippetHtml = '<div class="mw-message-box mw-message-box-error">' . $this->msg( 'admindashboard-config-snippet-missing' )->escaped() . '</div>';
 			}
@@ -357,7 +371,8 @@ class SpecialAdminDashboard extends SpecialPage {
 
 		// Groups table with rights and member counts
 		$html .= '<h2>' . $this->msg( 'admindashboard-group-rights' )->escaped() . '</h2>';
-		$html .= '<table class="wikitable"><tr><th>' . $this->msg( 'admindashboard-group' )->text() . '</th><th>' . $this->msg( 'admindashboard-members' )->text() . '</th><th>' . $this->msg( 'admindashboard-rights' )->text() . '</th></tr>';
+		$html .= '<table class="wikitable"><tr><th>' . $this->msg( 'admindashboard-group' )->text() . '</th><th>' . $this->msg( 'admindashboard-members' )->text() . '</th><th>' . $this->msg( 'admindashboard-rights' )->text() . '</th><th>' . $this->msg( 'admindashboard-actions' )->text() . '</th></tr>';
+		$lockedGroups = [ 'sysop', 'interface-admin' ];
 		foreach ( $allGroupNames as $group ) {
 			$memberCount = (int)$dbr->selectField( 'user_groups', 'COUNT(*)', [ 'ug_group' => $group ], __METHOD__ );
 			$rightsList = [];
@@ -366,13 +381,53 @@ class SpecialAdminDashboard extends SpecialPage {
 					if ( $allowed ) { $rightsList[] = (string)$right; }
 				}
 			}
+			$actionCell = '';
+			if ( in_array( $group, $lockedGroups, true ) ) {
+				$actionCell = '<span class="mw-ui-destructive">' . $this->msg( 'admindashboard-locked' )->escaped() . '</span>';
+			} else {
+				$title = \SpecialPage::getTitleFor( 'AdminDashboard', 'permissions' );
+				$editUrl = $title->getLocalURL( [ 'editGroup' => $group ] );
+				$actionCell = '<a class="mw-ui-button" href="' . htmlspecialchars( $editUrl ) . '">' . $this->msg( 'admindashboard-edit' )->escaped() . '</a>';
+			}
 			$html .= '<tr>'
 				. '<td>' . htmlspecialchars( $group ) . '</td>'
 				. '<td>' . intval( $memberCount ) . '</td>'
 				. '<td>' . ( $rightsList ? htmlspecialchars( implode( ', ', $rightsList ) ) : '<em>' . $this->msg( 'admindashboard-none' )->escaped() . '</em>' ) . '</td>'
+				. '<td>' . $actionCell . '</td>'
 				. '</tr>';
 		}
 		$html .= '</table>';
+
+		// Edit form for a specific group if requested and not locked
+		$editGroup = trim( $this->getRequest()->getText( 'editGroup', '' ) );
+		if ( $editGroup !== '' ) {
+			if ( in_array( $editGroup, $lockedGroups, true ) ) {
+				$html .= '<div class="mw-message-box mw-message-box-error" style="margin-top:1em;">' . $this->msg( 'admindashboard-edit-group-locked' )->escaped() . '</div>';
+			} else {
+				$html .= '<h2 style="margin-top:1.5em;">' . $this->msg( 'admindashboard-edit-group' )->escaped() . ': ' . htmlspecialchars( $editGroup ) . '</h2>';
+				$html .= '<form method="post">';
+				$html .= '<input type="hidden" name="generate_group_snippet" value="1">';
+				$html .= '<div class="mw-form">';
+				$html .= '<div class="field"><label for="group_name">' . $this->msg( 'admindashboard-group-name' )->escaped() . '</label> '
+					. '<input type="text" class="mw-ui-input" id="group_name" name="group_name" value="' . htmlspecialchars( $editGroup ) . '" readonly></div>';
+				$html .= '<div class="field"><label>' . $this->msg( 'admindashboard-rights' )->escaped() . '</label>';
+				$html .= '<div class="rights-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5em;max-height:320px;overflow:auto;border:1px solid #ccc;padding:.5em;">';
+				$current = isset( $cfgGroupPerms[$editGroup] ) && is_array( $cfgGroupPerms[$editGroup] ) ? $cfgGroupPerms[$editGroup] : [];
+				foreach ( $availableRights as $right ) {
+					$checked = ( isset( $current[$right] ) && $current[$right] ) ? ' checked' : '';
+					$html .= '<label style="display:flex;align-items:center;gap:.4em;">'
+						. '<input type="checkbox" name="rights[' . htmlspecialchars( $right ) . ']" value="1"' . $checked . '>'
+						. '<code>' . htmlspecialchars( $right ) . '</code>'
+						. '</label>';
+				}
+				$html .= '</div></div>';
+				$html .= '<div class="actions" style="margin-top:.8em;">'
+					. '<button type="submit" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-generate-update-snippet' )->escaped() . '</button>'
+					. '</div>';
+				$html .= '</div>';
+				$html .= '</form>';
+			}
+		}
 
 		// Create/modify group form (generates snippet)
 		$html .= '<h2 style="margin-top:1.5em;">' . $this->msg( 'admindashboard-create-group' )->escaped() . '</h2>';
