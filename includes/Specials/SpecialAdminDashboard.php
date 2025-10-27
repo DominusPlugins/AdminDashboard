@@ -169,20 +169,27 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= $this->makeNav();
 
 		// Search form
-		$html .= '<form method="GET" class="mw-ui-form">';
+		$html .= '<form method="GET" class="mw-ui-form" style="margin-bottom: 20px;">';
+		$html .= '<fieldset>';
+		$html .= '<legend>' . $this->msg( 'admindashboard-search' )->text() . '</legend>';
 		$html .= '<div class="mw-ui-form-field">';
-		$html .= '<input type="text" name="search" value="' . htmlspecialchars( $search ) . '" placeholder="' . $this->msg( 'admindashboard-search-users' )->text() . '" class="mw-ui-input">';
+		$html .= '<label for="search-input">' . $this->msg( 'admindashboard-search-users' )->text() . ':</label>';
+		$html .= '<input type="text" id="search-input" name="search" value="' . htmlspecialchars( $search ) . '" class="mw-ui-input" style="flex: 1; min-width: 250px;">';
 		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-search' )->text() . '</button>';
 		if ( $search ) {
 			$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'users' ) ) . '" class="mw-ui-button">' . $this->msg( 'admindashboard-clear' )->text() . '</a>';
 		}
 		$html .= '</div>';
+		$html .= '</fieldset>';
 		$html .= '</form>';
 
 		// Bulk actions form
-		$html .= '<form method="POST" class="mw-ui-form" style="margin: 20px 0;">';
+		$html .= '<form method="POST" class="mw-ui-form" style="margin-bottom: 20px;">';
+		$html .= '<fieldset>';
+		$html .= '<legend>' . $this->msg( 'admindashboard-bulk-actions' )->text() . '</legend>';
 		$html .= '<div class="mw-ui-form-field">';
-		$html .= '<select name="bulk_action" class="mw-ui-select">';
+		$html .= '<label for="bulk-action-select">' . $this->msg( 'admindashboard-select-action' )->text() . ':</label>';
+		$html .= '<select id="bulk-action-select" name="bulk_action" class="mw-ui-select">';
 		$html .= '<option value="">' . $this->msg( 'admindashboard-select-action' )->text() . '</option>';
 		$html .= '<option value="promote">' . $this->msg( 'admindashboard-promote-sysop' )->text() . '</option>';
 		$html .= '<option value="demote">' . $this->msg( 'admindashboard-remove-sysop' )->text() . '</option>';
@@ -190,6 +197,7 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '</select>';
 		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-destructive">' . $this->msg( 'admindashboard-apply' )->text() . '</button>';
 		$html .= '</div>';
+		$html .= '</fieldset>';
 		$html .= '</form>';
 
 		$html .= '<table class="wikitable sortable" style="width: 100%;">';

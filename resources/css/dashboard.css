@@ -63,23 +63,139 @@
 }
 
 /* Form styling */
-.mw-ui-form-field {
-	margin-bottom: 12px;
+.mw-ui-form {
+	margin-bottom: 20px;
 }
 
-.mw-ui-form-field input,
-.mw-ui-form-field select {
-	margin-right: 8px;
+.mw-ui-form fieldset {
+	border: 1px solid #a2a9b1;
+	border-radius: 2px;
+	padding: 16px;
+	margin-bottom: 16px;
+}
+
+.mw-ui-form legend {
+	padding: 0 8px;
+	font-weight: bold;
+	color: #202122;
+	border: none;
+	font-size: 16px;
+}
+
+.mw-ui-form-field {
+	margin-bottom: 12px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.mw-ui-form-field label {
+	font-weight: 600;
+	min-width: 120px;
+}
+
+.mw-ui-input,
+.mw-ui-select {
+	padding: 6px 8px;
+	border: 1px solid #a2a9b1;
+	border-radius: 2px;
+	font-size: 14px;
+	line-height: 1.42857143;
+	background-color: #fff;
+	color: #202122;
+	box-sizing: border-box;
+	min-width: 200px;
+}
+
+.mw-ui-input:focus,
+.mw-ui-select:focus {
+	border-color: #3366cc;
+	outline: none;
+	box-shadow: 0 0 0 1px #3366cc;
+}
+
+.mw-ui-select {
+	cursor: pointer;
+}
+
+.mw-ui-button {
+	padding: 6px 12px;
+	border: 1px solid #a2a9b1;
+	border-radius: 2px;
+	background-color: #f8f9fa;
+	color: #202122;
+	font-size: 14px;
+	line-height: 1.42857143;
+	cursor: pointer;
+	text-decoration: none;
+	display: inline-block;
+	text-align: center;
+	transition: background-color 0.1s, border-color 0.1s, color 0.1s;
+	white-space: nowrap;
+}
+
+.mw-ui-button:hover {
+	background-color: #fff;
+	border-color: #72777d;
+}
+
+.mw-ui-button:active {
+	background-color: #c8ccd1;
+	border-color: #72777d;
+}
+
+.mw-ui-button-primary {
+	background-color: #3366cc;
+	border-color: #3366cc;
+	color: #fff;
+}
+
+.mw-ui-button-primary:hover {
+	background-color: #2545a0;
+	border-color: #2545a0;
+}
+
+.mw-ui-button-primary:active {
+	background-color: #1e3a8c;
+	border-color: #1e3a8c;
+}
+
+.mw-ui-button-destructive {
+	background-color: #d33;
+	border-color: #d33;
+	color: #fff;
+}
+
+.mw-ui-button-destructive:hover {
+	background-color: #b32424;
+	border-color: #b32424;
+}
+
+.mw-ui-button-destructive:active {
+	background-color: #972222;
+	border-color: #972222;
 }
 
 /* Table styling enhancements */
 .wikitable th {
 	background-color: #f8f9fa;
 	font-weight: 600;
+	border: 1px solid #a2a9b1;
+	padding: 8px 12px;
+}
+
+.wikitable td {
+	border: 1px solid #a2a9b1;
+	padding: 8px 12px;
 }
 
 .wikitable tr:hover {
 	background-color: #f8f9fa;
+}
+
+.wikitable input[type="checkbox"] {
+	margin: 0;
 }
 
 /* Status indicators */
