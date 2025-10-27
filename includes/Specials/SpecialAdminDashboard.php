@@ -217,8 +217,8 @@ class SpecialAdminDashboard extends SpecialPage {
 
 		$html .= '</table>';
 
-		// Modal markup
-		$html .= '<div id="user-edit-modal" class="modal-overlay">';
+		// Modal markup (hidden by default; JS toggles to display:block)
+		$html .= '<div id="user-edit-modal" class="modal-overlay" style="display: none;">';
 		$html .= '<div class="modal-content">';
 		$html .= '<div class="modal-header">';
 		$html .= '<h3 id="modal-title">' . $this->msg( 'admindashboard-edit-user' )->text() . '</h3>';
