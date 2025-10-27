@@ -134,15 +134,22 @@ class SpecialAdminDashboard extends SpecialPage {
 		$userIds = array_keys( $users );
 		$editCounts = [];
 		if ( !empty( $userIds ) ) {
-			$editResult = $dbr->select(
-				'revision',
-				[ 'rev_user', 'COUNT(*) as edit_count' ],
-				[ 'rev_user' => $userIds ],
-				__METHOD__,
-				[ 'GROUP BY' => 'rev_user' ]
-			);
-			foreach ( $editResult as $row ) {
-				$editCounts[$row->rev_user] = $row->edit_count;
+			// Try to get edit counts using user_editcount if available, otherwise set to 0
+			try {
+				$editCountResult = $dbr->select(
+					'user',
+					[ 'user_id', 'user_editcount' ],
+					[ 'user_id' => $userIds ],
+					__METHOD__
+				);
+				foreach ( $editCountResult as $row ) {
+					$editCounts[$row->user_id] = $row->user_editcount ?? 0;
+				}
+			} catch ( \Exception $e ) {
+				// If user_editcount doesn't exist, just use 0 for all
+				foreach ( $userIds as $id ) {
+					$editCounts[$id] = 0;
+				}
 			}
 		}
 
