@@ -47,68 +47,53 @@
 	 * Initialize user modal behavior and event delegation
 	 */
 	function initializeUserModal() {
-		// Event delegation for username clicks
-		document.addEventListener( 'click', function ( e ) {
-			const link = e.target.closest( '.user-edit-link' );
-			if ( link ) {
-				e.preventDefault();
-				const row = link.closest( 'tr' );
-				if ( !row ) {
-					return;
-				}
-				const userData = {
-					id: row.dataset.userId,
-					name: row.dataset.userName,
-					email: row.dataset.userEmail || '',
-					groups: JSON.parse( row.dataset.userGroups || '[]' ),
-					registration: row.dataset.userRegistered || '',
-					touched: row.dataset.userTouched || ''
-				};
-				showUserEditModal( userData );
-			}
+		// Event delegation (jQuery) for username clicks
+		$( document ).on( 'click', '.user-edit-link', function ( e ) {
+			e.preventDefault();
+			const row = this.closest( 'tr' );
+			if ( !row ) return;
+			const userData = {
+				id: row.dataset.userId,
+				name: row.dataset.userName,
+				email: row.dataset.userEmail || '',
+				groups: JSON.parse( row.dataset.userGroups || '[]' ),
+				registration: row.dataset.userRegistered || '',
+				touched: row.dataset.userTouched || ''
+			};
+			showUserEditModal( userData );
 		} );
 
 		// Close modal when clicking close buttons
-		document.addEventListener( 'click', function ( e ) {
-			if ( e.target.closest( '.modal-close' ) ) {
+		$( document ).on( 'click', '.modal-close', function () {
+			hideUserEditModal();
+		} );
+
+		// Close modal when clicking overlay background
+		$( '#user-edit-modal' ).on( 'click', function ( e ) {
+			if ( e.target === this ) {
 				hideUserEditModal();
 			}
 		} );
 
-		// Close modal when clicking overlay background
-		const overlay = document.getElementById( 'user-edit-modal' );
-		if ( overlay ) {
-			overlay.addEventListener( 'click', function ( e ) {
-				if ( e.target === overlay ) {
-					hideUserEditModal();
-				}
-			} );
-		}
-
 		// Add group button
-		const addGroupBtn = document.getElementById( 'add-group-btn' );
-		if ( addGroupBtn ) {
-			addGroupBtn.addEventListener( 'click', function () {
-				const select = document.getElementById( 'add-group-select' );
-				const groupsList = document.getElementById( 'user-groups-list' );
-				const groupName = ( select && select.value ) ? select.value : '';
-				if ( groupName && groupsList ) {
-					const div = document.createElement( 'div' );
-					div.className = 'group-tag';
-					div.innerHTML = groupName + ' <button type="button" class="remove-group">×</button>';
-					groupsList.appendChild( div );
-					select.value = '';
-				}
-			} );
-		}
+		$( document ).on( 'click', '#add-group-btn', function () {
+			const select = document.getElementById( 'add-group-select' );
+			const groupsList = document.getElementById( 'user-groups-list' );
+			const groupName = ( select && select.value ) ? select.value : '';
+			if ( groupName && groupsList ) {
+				const div = document.createElement( 'div' );
+				div.className = 'group-tag';
+				div.innerHTML = groupName + ' <button type="button" class="remove-group">×</button>';
+				groupsList.appendChild( div );
+				select.value = '';
+			}
+		} );
 
 		// Remove group (delegated)
-		document.addEventListener( 'click', function ( e ) {
-			if ( e.target && e.target.classList.contains( 'remove-group' ) ) {
-				e.preventDefault();
-				const parent = e.target.closest( '.group-tag' );
-				if ( parent ) parent.remove();
-			}
+		$( document ).on( 'click', '.remove-group', function ( e ) {
+			e.preventDefault();
+			const parent = this.closest( '.group-tag' );
+			if ( parent ) parent.remove();
 		} );
 
 		// Select all checkbox
