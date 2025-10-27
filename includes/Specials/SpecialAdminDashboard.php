@@ -116,9 +116,11 @@ class SpecialAdminDashboard extends SpecialPage {
 		$out->setPageTitle( 'Page Management' );
 
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		
+		// Try to get the most recent revision for each page
 		$result = $dbr->select(
 			[ 'page', 'revision' ],
-			[ 'page_title', 'page_namespace', 'rev_timestamp', 'rev_user_text' ],
+			[ 'page_title', 'page_namespace', 'rev_timestamp', 'rev_user' ],
 			[],
 			__METHOD__,
 			[ 'ORDER BY' => 'rev_timestamp DESC', 'LIMIT' => 50 ],
@@ -133,9 +135,16 @@ class SpecialAdminDashboard extends SpecialPage {
 		foreach ( $result as $row ) {
 			$title = \Title::makeTitleSafe( $row->page_namespace, $row->page_title );
 			if ( $title ) {
+				// Get username from rev_user if available
+				$userName = 'Unknown';
+				if ( $row->rev_user ) {
+					$user = \User::newFromId( $row->rev_user );
+					$userName = $user ? $user->getName() : 'Unknown';
+				}
+				
 				$html .= '<tr><td><a href="' . htmlspecialchars( $title->getFullURL() ) . '">' . htmlspecialchars( $title->getPrefixedText() ) . '</a></td>';
 				$html .= '<td>' . substr( $row->rev_timestamp, 0, 10 ) . '</td>';
-				$html .= '<td>' . htmlspecialchars( $row->rev_user_text ?? 'Unknown' ) . '</td></tr>';
+				$html .= '<td>' . htmlspecialchars( $userName ) . '</td></tr>';
 			}
 		}
 
