@@ -19,15 +19,19 @@
 	},
 	"ResourceModules": {
 		"ext.AdminDashboard.styles": {
-			"styles": "resources/css/dashboard.css"
+			"styles": [ "resources/css/dashboard.css" ]
 		},
 		"ext.AdminDashboard.scripts": {
-			"scripts": "resources/js/dashboard.js",
+			"scripts": [ "resources/js/dashboard.js" ],
 			"dependencies": [
 				"jquery"
 			]
 		}
 	},
+    "ResourceFileModulePaths": {
+        "localBasePath": "./",
+        "remoteExtPath": "AdminDashboard"
+    },
 	"SpecialPages": {
 		"AdminDashboard": "MediaWiki\\Extension\\AdminDashboard\\Specials\\SpecialAdminDashboard"
 	},
