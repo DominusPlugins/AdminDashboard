@@ -52,6 +52,7 @@
 	 * Initialize user modal behavior and event delegation
 	 */
 	function initializeUserModal() {
+		var isSavingUser = false;
 		// Event delegation (jQuery) for username clicks
 		$( document ).on( 'click', '.user-edit-link', function ( e ) {
 			e.preventDefault();
@@ -81,36 +82,60 @@
 		} );
 
 		// Save user (groups) via API userrights
-		$( document ).on( 'submit', '#user-edit-form', function ( e ) {
+		function handleUserSave( e ) {
 			e.preventDefault();
+			if ( isSavingUser ) { if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] Save already in progress' ); return; }
+			isSavingUser = true;
+			if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] Save submitted' );
+			// Disable save button and show progress
+			var saveBtn = document.querySelector( '#user-edit-form button[type="submit"]' );
+			if ( saveBtn ) {
+				if ( !saveBtn.dataset.origText ) saveBtn.dataset.origText = saveBtn.textContent;
+				saveBtn.disabled = true;
+				saveBtn.textContent = 'Saving…';
+			}
 			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
 			const initGroupsStr = ( document.getElementById( 'initial-groups' ) || {} ).value || '[]';
 			let initGroups = [];
 			try { initGroups = JSON.parse( initGroupsStr ); } catch ( _e ) {}
 			const nowGroups = getGroupsFromUI();
 			const d = diffGroups( initGroups, nowGroups );
-			if ( !username ) { mw.notify( 'No username found', { type: 'error' } ); return; }
+			if ( !username ) { ( mw.notify ? mw.notify( 'No username found', { type: 'error' } ) : alert( 'No username found' ) ); return; }
 
 			if ( d.add.length === 0 && d.remove.length === 0 ) {
-				mw.notify( 'No changes to save', { type: 'info' } );
+				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] No changes detected' );
+				mw.notify && mw.notify( 'No changes to save', { type: 'info' } );
 				hideUserEditModal();
 				return;
 			}
 
 			const api = new mw.Api();
-			api.postWithToken( 'csrf', {
+			const params = {
 				action: 'userrights',
 				format: 'json',
-				user: username,
-				add: d.add.join( '|' ),
-				remove: d.remove.join( '|' )
-			} ).done( function () {
-				mw.notify( 'User groups updated', { type: 'success' } );
+				user: username
+			};
+			if ( d.add.length ) { params.add = d.add.join( '|' ); }
+			if ( d.remove.length ) { params.remove = d.remove.join( '|' ); }
+			api.postWithToken( 'csrf', params ).done( function ( data ) {
+				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] userrights success', data );
+				mw.notify && mw.notify( 'User groups updated', { type: 'success' } );
 				hideUserEditModal();
 			} ).fail( function ( err ) {
-				mw.notify( 'Failed to update groups: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
+				if ( typeof console !== 'undefined' ) console.error( '[AdminDashboard] userrights failed', err );
+				mw.notify && mw.notify( 'Failed to update groups: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
+			} ).always( function () {
+				isSavingUser = false;
+				if ( saveBtn ) {
+					saveBtn.disabled = false;
+					saveBtn.textContent = saveBtn.dataset.origText || 'Save';
+				}
 			} );
-		} );
+		}
+
+		$( document ).on( 'submit', '#user-edit-form', handleUserSave );
+		// Safety: also catch direct button clicks
+		$( document ).on( 'click', '#user-edit-form button[type="submit"]', handleUserSave );
 
 		// Block user via core API
 		$( document ).on( 'click', '#block-user-btn', function () {
