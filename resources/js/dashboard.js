@@ -160,16 +160,30 @@
 		function apiPostWithCsrf( params, retry ) {
 			retry = typeof retry === 'number' ? retry : 1;
 			const api = new mw.Api();
-			return api.getToken( 'csrf' ).then( function ( token ) {
-				const fullParams = Object.assign( { format: 'json', assert: 'user' }, params, { token: token } );
-				return api.post( fullParams );
-			} ).catch( function ( err ) {
-				const code = err && err.error && err.error.code;
-				if ( code === 'badtoken' && retry > 0 ) {
-					if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] badtoken, retrying with fresh token' );
-					return apiPostWithCsrf( params, retry - 1 );
+			const base = Object.assign( { format: 'json', assert: 'user' }, params );
+			function attempt( token, mayRetry ) {
+				const fullParams = Object.assign( {}, base, { token: token } );
+				return api.post( fullParams ).catch( function ( err ) {
+					const code = err && err.error && err.error.code;
+					if ( code === 'badtoken' && mayRetry && retry > 0 ) {
+						if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] badtoken, fetching fresh token and retrying' );
+						return api.getToken( 'csrf' ).then( function ( fresh ) {
+							return attempt( fresh, false );
+						} );
+					}
+					return Promise.reject( err );
+				} );
+			}
+			// Try fast path with cached token first
+			try {
+				var cached = mw.user && mw.user.tokens && mw.user.tokens.get ? mw.user.tokens.get( 'csrfToken' ) : null;
+				if ( cached ) {
+					return attempt( cached, true );
 				}
-				return Promise.reject( err );
+			} catch ( _e ) {}
+			// Fallback: fetch a token
+			return api.getToken( 'csrf' ).then( function ( token ) {
+				return attempt( token, true );
 			} );
 		}
 
