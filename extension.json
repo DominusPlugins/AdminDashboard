@@ -21,7 +21,7 @@
 		"ext.AdminDashboard.styles": {
 			"styles": [ "resources/css/dashboard.css" ]
 		},
-		"ext.AdminDashboard.scripts": {
+		"ext.AdminDashboard.scripts.v2": {
 			"scripts": [ "resources/js/dashboard.js" ],
 			"dependencies": [
 				"jquery",
