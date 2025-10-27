@@ -32,6 +32,7 @@
 	"admindashboard-promote-sysop": "Promote to Sysop",
 	"admindashboard-remove-sysop": "Remove Sysop",
 	"admindashboard-block-users": "Block Users",
+	"admindashboard-apply": "Apply",
 	"admindashboard-bulk-actions": "Bulk Actions",
 	"admindashboard-username": "Username",
 	"admindashboard-groups": "Groups",
