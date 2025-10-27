@@ -221,7 +221,7 @@ class SpecialAdminDashboard extends SpecialPage {
 			
 			$html .= '<tr' . $blockClass . ' data-user-id="' . intval( $userId ) . '" data-user-name="' . htmlspecialchars( $user['name'] ) . '" data-user-email="' . htmlspecialchars( $user['email'] ?? '' ) . '" data-user-groups="' . htmlspecialchars( json_encode( $user['groups'] ) ) . '" data-user-registered="' . htmlspecialchars( $user['registration'] ) . '" data-user-touched="' . htmlspecialchars( $user['touched'] ) . '">';
 			$html .= '<td><input type="checkbox" name="user_ids[]" value="' . intval( $userId ) . '"></td>';
-			$html .= '<td><a href="#" class="user-edit-link" onclick="handleUserClick(event, this); return false;" data-user-id="' . intval( $userId ) . '">' . htmlspecialchars( $user['name'] ) . '</a></td>';
+			$html .= '<td><a href="#" class="user-edit-link" data-user-id="' . intval( $userId ) . '">' . htmlspecialchars( $user['name'] ) . '</a></td>';
 			$html .= '<td>' . $groups . '</td>';
 			$html .= '<td>' . substr( $user['registration'], 0, 10 ) . '</td>';
 			$html .= '<td>' . substr( $user['touched'], 0, 10 ) . '</td>';
@@ -309,6 +309,7 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '<script>
 		function handleUserClick(event, link) {
 			event.preventDefault();
+			alert("You clicked on: " + link.textContent);
 			const row = link.closest("tr");
 			const userData = {
 				id: row.dataset.userId,
@@ -358,30 +359,27 @@ class SpecialAdminDashboard extends SpecialPage {
 		function initializeModal() {
 			console.log("Modal initialization started");
 			
-			// User edit link clicks - use event delegation on table
-			var table = document.querySelector("table.wikitable");
-			if (table) {
-				table.addEventListener("click", function(e) {
-					if (e.target.closest(".user-edit-link")) {
-						e.preventDefault();
-						const link = e.target.closest(".user-edit-link");
-						const row = link.closest("tr");
-						console.log("User clicked:", row.dataset.userName);
-						const userData = {
-							id: row.dataset.userId,
-							name: row.dataset.userName,
-							email: row.dataset.userEmail,
-							groups: JSON.parse(row.dataset.userGroups || "[]"),
-							registration: row.dataset.userRegistered,
-							touched: row.dataset.userTouched
-						};
-						console.log("User data:", userData);
-						showUserEditModal(userData);
-					}
+			// Find all user edit links and bind click handlers directly
+			var links = document.querySelectorAll(".user-edit-link");
+			console.log("Found " + links.length + " user edit links");
+			
+			links.forEach(function(link) {
+				link.addEventListener("click", function(e) {
+					e.preventDefault();
+					console.log("User edit link clicked:", this.textContent);
+					const row = this.closest("tr");
+					const userData = {
+						id: row.dataset.userId,
+						name: row.dataset.userName,
+						email: row.dataset.userEmail,
+						groups: JSON.parse(row.dataset.userGroups || "[]"),
+						registration: row.dataset.userRegistered,
+						touched: row.dataset.userTouched
+					};
+					console.log("User data:", userData);
+					showUserEditModal(userData);
 				});
-			} else {
-				console.log("Table not found");
-			}
+			});
 
 			// Modal close buttons
 			document.querySelectorAll(".modal-close").forEach(function(btn) {
@@ -429,10 +427,24 @@ class SpecialAdminDashboard extends SpecialPage {
 
 		// Initialize when ready
 		if (document.readyState === "loading") {
-			document.addEventListener("DOMContentLoaded", initializeModal);
+			document.addEventListener("DOMContentLoaded", function() {
+				console.log("DOMContentLoaded fired, initializing modal");
+				initializeModal();
+			});
 		} else {
+			console.log("Document already loaded, initializing modal immediately");
 			initializeModal();
 		}
+		
+		// Also try initializing after a short delay
+		setTimeout(function() {
+			console.log("Delayed initialization check");
+			var links = document.querySelectorAll(".user-edit-link:not([data-initialized])");
+			if (links.length > 0) {
+				console.log("Found uninitialized links, reinitializing");
+				initializeModal();
+			}
+		}, 500);
 		</script>';
 
 		$out->addHTML( $html );
