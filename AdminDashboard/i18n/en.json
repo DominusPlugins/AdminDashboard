@@ -1,0 +1,20 @@
+{
+	"@metadata": {
+		"authors": [
+			"Tyler"
+		],
+		"locale": "en",
+		"last-updated": "2025-10-27"
+	},
+	"admindashboard-desc": "A comprehensive admin dashboard for managing MediaWiki instances",
+	"admindashboard-title": "Admin Dashboard",
+	"admindashboard-overview": "Dashboard Overview",
+	"admindashboard-users": "User Management",
+	"admindashboard-pages": "Page Management",
+	"admindashboard-permissions": "Permission Management",
+	"admindashboard-statistics": "Statistics",
+	"admindashboard-logs": "Activity Logs",
+	"admindashboard-moderation": "Content Moderation",
+	"admindashboard-configuration": "Site Configuration",
+	"admindashboard-extensions": "Extension Management"
+}

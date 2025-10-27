@@ -1,0 +1,35 @@
+{
+	"name": "AdminDashboard",
+	"version": "1.0.0",
+	"author": [
+		"Tyler"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:AdminDashboard",
+	"descriptionmsg": "admindashboard-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.35.0"
+	},
+	"MessagesDirs": {
+		"AdminDashboard": "i18n"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\AdminDashboard\\": "includes/"
+	},
+	"ResourceModules": {
+		"ext.AdminDashboard.styles": {
+			"styles": "resources/css/dashboard.css"
+		},
+		"ext.AdminDashboard.scripts": {
+			"scripts": "resources/js/dashboard.js",
+			"dependencies": [
+				"jquery"
+			]
+		}
+	},
+	"SpecialPages": {
+		"AdminDashboard": "MediaWiki\\Extension\\AdminDashboard\\Specials\\SpecialAdminDashboard"
+	},
+	"manifest_version": 2
+}

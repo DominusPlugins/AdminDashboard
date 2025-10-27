@@ -1,0 +1,48 @@
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# PHP
+*.php~
+*.phar
+
+# Composer
+/vendor/
+composer.lock
+
+# Testing
+/tests/coverage/
+.phpunit.result.cache
+
+# Build artifacts
+/build/
+/dist/
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Logs
+*.log
+debug.log
+
+# Node (if using build tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Database
+*.sqlite
+*.db
