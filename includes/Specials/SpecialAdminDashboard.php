@@ -4,8 +4,6 @@ namespace MediaWiki\Extension\AdminDashboard\Specials;
 
 use SpecialPage;
 use MediaWiki\MediaWikiServices;
-use Title;
-use User;
 
 /**
  * Special page for Admin Dashboard
@@ -134,7 +132,7 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '<table class="wikitable sortable"><tr><th>Title</th><th>Last Modified</th></tr>';
 
 		foreach ( $result as $row ) {
-			$title = Title::makeTitleSafe( $row->page_namespace, $row->page_title );
+			$title = \Title::makeTitleSafe( $row->page_namespace, $row->page_title );
 			if ( $title ) {
 				$html .= '<tr><td><a href="' . htmlspecialchars( $title->getFullURL() ) . '">' . htmlspecialchars( $title->getPrefixedText() ) . '</a></td>';
 				$html .= '<td>' . substr( $row->page_touched, 0, 10 ) . '</td></tr>';
