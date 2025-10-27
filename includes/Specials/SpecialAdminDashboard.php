@@ -369,6 +369,9 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '<h1>' . $this->msg( 'admindashboard-groups-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
 
+		// Data hook for JS (available rights)
+		$html .= '<div id="group-permissions-data" style="display:none" data-available-rights="' . htmlspecialchars( json_encode( array_values( $availableRights ) ) ) . '"></div>';
+
 		// Groups table with rights and member counts
 		$html .= '<h2>' . $this->msg( 'admindashboard-group-rights' )->escaped() . '</h2>';
 		$html .= '<table class="wikitable"><tr><th>' . $this->msg( 'admindashboard-group' )->text() . '</th><th>' . $this->msg( 'admindashboard-members' )->text() . '</th><th>' . $this->msg( 'admindashboard-rights' )->text() . '</th><th>' . $this->msg( 'admindashboard-actions' )->text() . '</th></tr>';
@@ -385,11 +388,10 @@ class SpecialAdminDashboard extends SpecialPage {
 			if ( in_array( $group, $lockedGroups, true ) ) {
 				$actionCell = '<span class="mw-ui-destructive">' . $this->msg( 'admindashboard-locked' )->escaped() . '</span>';
 			} else {
-				$title = \SpecialPage::getTitleFor( 'AdminDashboard', 'permissions' );
-				$editUrl = $title->getLocalURL( [ 'editGroup' => $group ] );
-				$actionCell = '<a class="mw-ui-button" href="' . htmlspecialchars( $editUrl ) . '">' . $this->msg( 'admindashboard-edit' )->escaped() . '</a>';
+				// JS will intercept this to open a modal; no navigation required
+				$actionCell = '<a class="mw-ui-button group-edit-link" href="#" data-group="' . htmlspecialchars( $group ) . '">' . $this->msg( 'admindashboard-edit' )->escaped() . '</a>';
 			}
-			$html .= '<tr>'
+			$html .= '<tr data-group-name="' . htmlspecialchars( $group ) . '" data-group-rights="' . htmlspecialchars( json_encode( array_values( $rightsList ) ) ) . '"' . ( in_array( $group, $lockedGroups, true ) ? ' data-group-locked="1"' : '' ) . '>'
 				. '<td>' . htmlspecialchars( $group ) . '</td>'
 				. '<td>' . intval( $memberCount ) . '</td>'
 				. '<td>' . ( $rightsList ? htmlspecialchars( implode( ', ', $rightsList ) ) : '<em>' . $this->msg( 'admindashboard-none' )->escaped() . '</em>' ) . '</td>'
@@ -397,6 +399,35 @@ class SpecialAdminDashboard extends SpecialPage {
 				. '</tr>';
 		}
 		$html .= '</table>';
+
+		// Group edit modal (hidden by default)
+		$html .= '<div id="group-edit-modal" class="modal-overlay" style="display:none;">';
+		$html .= '  <div class="modal-content">';
+		$html .= '    <div class="modal-header">';
+		$html .= '      <h3>' . $this->msg( 'admindashboard-edit-group' )->escaped() . '</h3>';
+		$html .= '      <button type="button" class="modal-close mw-ui-button">×</button>';
+		$html .= '    </div>';
+		$html .= '    <form id="group-edit-form">';
+		$html .= '      <input type="hidden" id="group-initial-rights" value="[]">';
+		$html .= '      <fieldset>';
+		$html .= '        <div><label for="group-edit-name">' . $this->msg( 'admindashboard-group-name' )->escaped() . ':</label> <input id="group-edit-name" class="mw-ui-input" type="text" readonly></div>';
+		$html .= '      </fieldset>';
+		$html .= '      <fieldset>';
+		$html .= '        <legend>' . $this->msg( 'admindashboard-rights' )->escaped() . '</legend>';
+		$html .= '        <div id="group-rights-list" class="rights-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5em;max-height:320px;overflow:auto;border:1px solid #ccc;padding:.5em;"></div>';
+		$html .= '      </fieldset>';
+		$html .= '      <div id="group-snippet-wrap" style="display:none;margin-top:.8em;">';
+		$html .= '        <label for="group-snippet">' . $this->msg( 'admindashboard-config-snippet-title' )->escaped() . '</label>';
+		$html .= '        <textarea id="group-snippet" rows="8" class="mw-ui-input" style="width:100%;font-family:monospace;"></textarea>';
+		$html .= '        <div class="actions" style="margin-top:.5em;"><button type="button" id="group-copy-btn" class="mw-ui-button">' . $this->msg( 'admindashboard-copy' )->escaped() . '</button></div>';
+		$html .= '      </div>';
+		$html .= '      <div class="modal-footer">';
+		$html .= '        <button type="button" class="modal-close mw-ui-button">' . $this->msg( 'admindashboard-cancel' )->escaped() . '</button>';
+		$html .= '        <button type="submit" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-generate-update-snippet' )->escaped() . '</button>';
+		$html .= '      </div>';
+		$html .= '    </form>';
+		$html .= '  </div>';
+		$html .= '</div>';
 
 		// Edit form for a specific group if requested and not locked
 		$editGroup = trim( $this->getRequest()->getText( 'editGroup', '' ) );

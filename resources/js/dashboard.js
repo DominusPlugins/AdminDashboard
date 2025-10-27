@@ -21,6 +21,7 @@
 		attachEventListeners();
 		initializeTableSorting();
 		initializeUserModal();
+		initializeGroupModal();
 		adminDashboardEventsBound = true;
 	}
 
@@ -394,6 +395,127 @@
 		$( document ).off( 'change.adminDashboard', '#select-all' ).on( 'change.adminDashboard', '#select-all', function () {
 			var checked = this.checked;
 			document.querySelectorAll( 'input[name="user_ids[]"]' ).forEach( function ( cb ) { cb.checked = checked; } );
+		} );
+	}
+
+	/**
+	 * Initialize group edit modal behavior (Permissions tab)
+	 */
+	function initializeGroupModal() {
+		function notify( message, opts ) {
+			if ( mw && typeof mw.notify === 'function' ) {
+				mw.notify( message, opts || {} );
+			} else if ( typeof alert === 'function' ) {
+				alert( message );
+			} else if ( typeof console !== 'undefined' ) {
+				console.log( '[AdminDashboard notify]', message, opts );
+			}
+		}
+
+		function showGroupEditModal( groupName, currentRights, availableRights ) {
+			var modal = document.getElementById( 'group-edit-modal' );
+			if ( !modal ) { if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] #group-edit-modal not found' ); return; }
+			var nameEl = document.getElementById( 'group-edit-name' );
+			var initEl = document.getElementById( 'group-initial-rights' );
+			var list = document.getElementById( 'group-rights-list' );
+			var snipWrap = document.getElementById( 'group-snippet-wrap' );
+			var snip = document.getElementById( 'group-snippet' );
+			if ( nameEl ) nameEl.value = groupName || '';
+			if ( initEl ) initEl.value = JSON.stringify( Array.isArray( currentRights ) ? currentRights : [] );
+			if ( snipWrap ) snipWrap.style.display = 'none';
+			if ( snip ) snip.value = '';
+			if ( list ) {
+				list.innerHTML = '';
+				var set = new Set( currentRights || [] );
+				( availableRights || [] ).forEach( function ( r ) {
+					var label = document.createElement( 'label' );
+					label.style.display = 'flex';
+					label.style.alignItems = 'center';
+					label.style.gap = '.4em';
+					var cb = document.createElement( 'input' );
+					cb.type = 'checkbox';
+					cb.value = r;
+					if ( set.has( r ) ) cb.checked = true;
+					var code = document.createElement( 'code' );
+					code.textContent = r;
+					label.appendChild( cb );
+					label.appendChild( code );
+					list.appendChild( label );
+				} );
+			}
+			modal.style.display = 'block';
+		}
+
+		function hideGroupEditModal() {
+			var modal = document.getElementById( 'group-edit-modal' );
+			if ( modal ) modal.style.display = 'none';
+		}
+
+		// Open modal from actions column
+		$( document ).off( 'click.adminDashboard', '.group-edit-link' ).on( 'click.adminDashboard', '.group-edit-link', function ( e ) {
+			e.preventDefault();
+			var group = this.getAttribute( 'data-group' ) || '';
+			if ( !group ) return;
+			var row = this.closest( 'tr' );
+			if ( !row ) row = document.querySelector( 'tr[data-group-name="' + group.replace( /"/g, '\\"' ) + '"]' );
+			if ( row && row.dataset.groupLocked === '1' ) {
+				notify( 'This group is locked and cannot be edited here.', { type: 'error' } );
+				return;
+			}
+			var rights = [];
+			try { rights = JSON.parse( ( row && row.dataset.groupRights ) || '[]' ); } catch ( _e ) {}
+			var avail = [];
+			try {
+				var meta = document.getElementById( 'group-permissions-data' );
+				if ( meta && meta.dataset.availableRights ) {
+					avail = JSON.parse( meta.dataset.availableRights );
+				}
+			} catch ( _e2 ) {}
+			showGroupEditModal( group, rights, avail );
+		} );
+
+		// Close events
+		$( document ).off( 'click.adminDashboard', '#group-edit-modal .modal-close' ).on( 'click.adminDashboard', '#group-edit-modal .modal-close', function () {
+			hideGroupEditModal();
+		} );
+		$( document ).off( 'click.adminDashboard', '#group-edit-modal' ).on( 'click.adminDashboard', '#group-edit-modal', function ( e ) {
+			if ( e.target === this ) hideGroupEditModal();
+		} );
+
+		// Submit: generate LocalSettings snippet
+		$( document ).off( 'submit.adminDashboard', '#group-edit-form' ).on( 'submit.adminDashboard', '#group-edit-form', function ( e ) {
+			e.preventDefault();
+			var name = ( document.getElementById( 'group-edit-name' ) || {} ).value || '';
+			if ( !name ) { notify( 'No group selected', { type: 'error' } ); return; }
+			var initStr = ( document.getElementById( 'group-initial-rights' ) || {} ).value || '[]';
+			var init = [];
+			try { init = JSON.parse( initStr ); } catch ( _e ) {}
+			var chosen = Array.from( document.querySelectorAll( '#group-rights-list input[type="checkbox"]:checked' ) ).map( function ( cb ) { return cb.value; } );
+			var initSet = new Set( init );
+			var chosenSet = new Set( chosen );
+			var toDisable = Array.from( initSet ).filter( function ( r ) { return !chosenSet.has( r ); } );
+			var lines = [];
+			chosen.forEach( function ( r ) { lines.push( "$wgGroupPermissions['" + name.replace(/'/g, "\\'") + "']['" + r.replace(/'/g, "\\'") + "'] = true;" ); } );
+			toDisable.forEach( function ( r ) { lines.push( "$wgGroupPermissions['" + name.replace(/'/g, "\\'") + "']['" + r.replace(/'/g, "\\'") + "'] = false;" ); } );
+			var snipWrap = document.getElementById( 'group-snippet-wrap' );
+			var snip = document.getElementById( 'group-snippet' );
+			if ( snip ) snip.value = lines.join( '\n' );
+			if ( snipWrap ) snipWrap.style.display = 'block';
+			notify( 'Snippet generated. Copy and paste into LocalSettings.php', { type: 'info' } );
+		} );
+
+		// Copy button
+		$( document ).off( 'click.adminDashboard', '#group-copy-btn' ).on( 'click.adminDashboard', '#group-copy-btn', function () {
+			var snip = document.getElementById( 'group-snippet' );
+			if ( snip ) {
+				snip.select();
+				document.execCommand( 'copy' );
+				// Modern Clipboard API (best effort)
+				if ( navigator.clipboard && navigator.clipboard.writeText ) {
+					navigator.clipboard.writeText( snip.value ).catch( function () {} );
+				}
+				notify( 'Copied to clipboard', { type: 'success' } );
+			}
 		} );
 	}
 

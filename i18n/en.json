@@ -74,5 +74,6 @@
 	"admindashboard-locked": "Locked",
 	"admindashboard-edit-group": "Edit group",
 	"admindashboard-edit-group-locked": "This group is locked and cannot be edited here.",
-	"admindashboard-generate-update-snippet": "Generate update snippet"
+	"admindashboard-generate-update-snippet": "Generate update snippet",
+	"admindashboard-copy": "Copy to clipboard"
 }
