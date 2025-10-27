@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\AdminDashboard\Managers;
 
 use MediaWiki\MediaWikiServices;
+use User;
 
 /**
  * Manager for permission-related operations

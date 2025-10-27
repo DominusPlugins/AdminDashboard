@@ -19,26 +19,28 @@ class PageManager {
 	public function getRecentPages( $limit = 100 ) {
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 		$result = $dbr->select(
-			[ 'page', 'revision', 'user' ],
-			[ 'page_title', 'page_namespace', 'rev_timestamp', 'rev_user_text', 'page_latest' ],
+			[ 'page', 'revision' ],
+			[ 'page_title', 'page_namespace', 'rev_timestamp', 'rev_user_text', 'page_id' ],
 			[],
 			__METHOD__,
 			[ 'ORDER BY' => 'rev_timestamp DESC', 'LIMIT' => $limit ],
 			[
-				'revision' => [ 'INNER JOIN', 'page_latest = rev_id' ],
-				'user' => [ 'LEFT JOIN', 'rev_user = user_id' ]
+				'revision' => [ 'INNER JOIN', 'page_id = rev_page' ]
 			]
 		);
 
 		$pages = [];
 		foreach ( $result as $row ) {
-			$title = Title::makeTitle( $row->page_namespace, $row->page_title );
+			$title = \Title::makeTitleSafe( $row->page_namespace, $row->page_title );
+			if ( !$title ) {
+				continue;
+			}
 			$pages[] = [
 				'title' => $title->getPrefixedText(),
 				'url' => $title->getLocalURL(),
 				'lastModified' => substr( $row->rev_timestamp, 0, 10 ),
 				'lastUser' => $row->rev_user_text ?? 'Unknown',
-				'revisions' => $this->getRevisionCount( $row->page_latest ),
+				'revisions' => $this->getRevisionCount( $row->page_id ),
 			];
 		}
 
@@ -75,7 +77,7 @@ class PageManager {
 			return false;
 		}
 
-		$page = \MediaWiki\Page\WikiPageFactory::singleton()->newFromTitle( $titleObj );
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $titleObj );
 		$page->doDeleteArticleReal( 'Admin Dashboard deletion', null, null, null );
 
 		return true;

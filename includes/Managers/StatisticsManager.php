@@ -42,11 +42,15 @@ class StatisticsManager {
 		);
 
 		// Active users (last 30 days)
+		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		$timestamp = $dbr->timestamp( time() - 30 * 24 * 3600 );
 		$activeUsers = $dbr->selectField(
 			'user',
 			'COUNT(*)',
-			[ 'user_touched > DATE_SUB(NOW(), INTERVAL 30 DAY)' ],
-			__METHOD__
+			[ 'user_touched > ' . $dbr->addQuotes( $timestamp ) ],
+			__METHOD__,
+			[],
+			[]
 		);
 
 		return [
@@ -116,12 +120,11 @@ class StatisticsManager {
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 
 		$result = $dbr->select(
-			[ 'revision', 'user' ],
+			'revision',
 			[ 'rev_user_text', 'COUNT(*) as edit_count' ],
 			[],
 			__METHOD__,
-			[ 'GROUP BY' => 'rev_user_text', 'ORDER BY' => 'edit_count DESC', 'LIMIT' => 10 ],
-			[ 'user' => [ 'LEFT JOIN', 'rev_user = user_id' ] ]
+			[ 'GROUP BY' => 'rev_user_text', 'ORDER BY' => 'edit_count DESC', 'LIMIT' => 10 ]
 		);
 
 		$activity = [];

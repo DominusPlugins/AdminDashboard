@@ -18,12 +18,11 @@ class UserManager {
 	public function getAllUsers() {
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 		$result = $dbr->select(
-			[ 'user', 'user_groups' ],
+			'user',
 			[ 'user_name', 'user_registration', 'user_touched' ],
 			[],
 			__METHOD__,
-			[ 'ORDER BY' => 'user_name' ],
-			[ 'user_groups' => [ 'LEFT JOIN', 'user_id = ug_user' ] ]
+			[ 'ORDER BY' => 'user_name' ]
 		);
 
 		$users = [];
