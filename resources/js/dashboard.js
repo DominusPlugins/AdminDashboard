@@ -108,6 +108,9 @@
 			e.preventDefault();
 			const row = this.closest( 'tr' );
 			if ( !row ) { if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] Click on .user-edit-link but no row found' ); return; }
+			// Mark handled to avoid fallback duplicate handling
+			this.dataset.adHandled = '1';
+			setTimeout( () => { try { delete this.dataset.adHandled; } catch ( _e ) {} }, 0 );
 			const userData = {
 				id: row.dataset.userId,
 				name: row.dataset.userName,
@@ -124,6 +127,7 @@
 		document.addEventListener( 'click', function ( e ) {
 			var link = e.target && ( e.target.closest ? e.target.closest( '.user-edit-link' ) : null );
 			if ( link ) {
+				if ( link.dataset && link.dataset.adHandled === '1' ) { return; }
 				e.preventDefault();
 				var row = link.closest( 'tr' );
 				if ( !row ) return;
@@ -138,7 +142,7 @@
 				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] (fallback) Opening modal for user', userData.name );
 				showUserEditModal( userData );
 			}
-		}, true );
+		} );
 
 		// Close modal when clicking close buttons
 		$( document ).on( 'click', '.modal-close', function () {
@@ -151,6 +155,23 @@
 				hideUserEditModal();
 			}
 		} );
+
+		// Helper: POST with fresh CSRF and retry once on badtoken
+		function apiPostWithCsrf( params, retry ) {
+			retry = typeof retry === 'number' ? retry : 1;
+			const api = new mw.Api();
+			return api.getToken( 'csrf' ).then( function ( token ) {
+				const fullParams = Object.assign( { format: 'json', assert: 'user' }, params, { token: token } );
+				return api.post( fullParams );
+			} ).catch( function ( err ) {
+				const code = err && err.error && err.error.code;
+				if ( code === 'badtoken' && retry > 0 ) {
+					if ( typeof console !== 'undefined' ) console.warn( '[AdminDashboard] badtoken, retrying with fresh token' );
+					return apiPostWithCsrf( params, retry - 1 );
+				}
+				return Promise.reject( err );
+			} );
+		}
 
 		// Save user (groups) via API userrights
 		function handleUserSave( e ) {
@@ -180,22 +201,20 @@
 				return;
 			}
 
-			const api = new mw.Api();
 			const params = {
 				action: 'userrights',
-				format: 'json',
 				user: username
 			};
 			if ( d.add.length ) { params.add = d.add.join( '|' ); }
 			if ( d.remove.length ) { params.remove = d.remove.join( '|' ); }
-			api.postWithToken( 'csrf', params ).done( function ( data ) {
+			apiPostWithCsrf( params ).then( function ( data ) {
 				if ( typeof console !== 'undefined' ) console.log( '[AdminDashboard] userrights success', data );
 				notify( 'User groups updated', { type: 'success' } );
 				hideUserEditModal();
-			} ).fail( function ( err ) {
+			} ).catch( function ( err ) {
 				if ( typeof console !== 'undefined' ) console.error( '[AdminDashboard] userrights failed', err );
-				notify( 'Failed to update groups: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
-			} ).always( function () {
+				notify( 'Failed to update groups: ' + ( err && err.error && ( err.error.info || err.error.code ) || 'Unknown error' ), { type: 'error' } );
+			} ).finally( function () {
 				isSavingUser = false;
 				if ( saveBtn ) {
 					saveBtn.disabled = false;
@@ -212,19 +231,17 @@
 		$( document ).on( 'click', '#block-user-btn', function () {
 			const username = ( document.getElementById( 'edit-username' ) || {} ).value || '';
 			if ( !username ) { notify( 'No username to block', { type: 'error' } ); return; }
-			const api = new mw.Api();
-			api.postWithToken( 'csrf', {
+			apiPostWithCsrf( {
 				action: 'block',
 				user: username,
 				reason: 'Blocked via AdminDashboard',
 				expiry: '2 weeks',
 				nocreate: 1,
-				autoblock: 1,
-				format: 'json'
-			} ).done( function () {
+				autoblock: 1
+			} ).then( function () {
 				notify( 'User blocked', { type: 'success' } );
 				hideUserEditModal();
-			} ).fail( function ( err ) {
+			} ).catch( function ( err ) {
 				notify( 'Failed to block user: ' + ( err && err.error && err.error.info || 'Unknown error' ), { type: 'error' } );
 			} );
 		} );
@@ -243,14 +260,13 @@
 				.filter( function ( u ) { return !!u.name; } );
 			if ( ids.length === 0 ) { notify( 'Select at least one user', { type: 'warn' } ); return; }
 
-			const api = new mw.Api();
 			const calls = ids.map( function ( u ) {
 				if ( actionVal === 'promote' ) {
-					return api.postWithToken( 'csrf', { action: 'userrights', user: u.name, add: 'sysop', format: 'json' } );
+					return apiPostWithCsrf( { action: 'userrights', user: u.name, add: 'sysop' } );
 				} else if ( actionVal === 'demote' ) {
-					return api.postWithToken( 'csrf', { action: 'userrights', user: u.name, remove: 'sysop', format: 'json' } );
+					return apiPostWithCsrf( { action: 'userrights', user: u.name, remove: 'sysop' } );
 				} else if ( actionVal === 'block' ) {
-					return api.postWithToken( 'csrf', { action: 'block', user: u.name, reason: 'Bulk block (AdminDashboard)', expiry: '2 weeks', nocreate: 1, autoblock: 1, format: 'json' } );
+					return apiPostWithCsrf( { action: 'block', user: u.name, reason: 'Bulk block (AdminDashboard)', expiry: '2 weeks', nocreate: 1, autoblock: 1 } );
 				}
 				return Promise.resolve();
 			} );
