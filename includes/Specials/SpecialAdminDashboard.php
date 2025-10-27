@@ -117,34 +117,25 @@ class SpecialAdminDashboard extends SpecialPage {
 
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 		
-		// Try to get the most recent revision for each page
+		// Get pages only - simpler approach without revision table
 		$result = $dbr->select(
-			[ 'page', 'revision' ],
-			[ 'page_title', 'page_namespace', 'rev_timestamp', 'rev_user' ],
-			[],
+			'page',
+			[ 'page_title', 'page_namespace', 'page_touched' ],
+			[ 'page_namespace' => 0 ],  // Only main namespace pages
 			__METHOD__,
-			[ 'ORDER BY' => 'rev_timestamp DESC', 'LIMIT' => 50 ],
-			[ 'revision' => [ 'INNER JOIN', 'page_id = rev_page' ] ]
+			[ 'ORDER BY' => 'page_touched DESC', 'LIMIT' => 50 ]
 		);
 
 		$html = '<div class="admin-section">';
 		$html .= '<h1>Pages</h1>';
 		$html .= $this->makeNav();
-		$html .= '<table class="wikitable sortable"><tr><th>Title</th><th>Last Modified</th><th>By</th></tr>';
+		$html .= '<table class="wikitable sortable"><tr><th>Title</th><th>Last Modified</th></tr>';
 
 		foreach ( $result as $row ) {
 			$title = \Title::makeTitleSafe( $row->page_namespace, $row->page_title );
 			if ( $title ) {
-				// Get username from rev_user if available
-				$userName = 'Unknown';
-				if ( $row->rev_user ) {
-					$user = \User::newFromId( $row->rev_user );
-					$userName = $user ? $user->getName() : 'Unknown';
-				}
-				
 				$html .= '<tr><td><a href="' . htmlspecialchars( $title->getFullURL() ) . '">' . htmlspecialchars( $title->getPrefixedText() ) . '</a></td>';
-				$html .= '<td>' . substr( $row->rev_timestamp, 0, 10 ) . '</td>';
-				$html .= '<td>' . htmlspecialchars( $userName ) . '</td></tr>';
+				$html .= '<td>' . substr( $row->page_touched, 0, 10 ) . '</td></tr>';
 			}
 		}
 
