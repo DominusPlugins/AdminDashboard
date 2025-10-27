@@ -164,7 +164,8 @@ class SpecialAdminDashboard extends SpecialPage {
 			}
 		}
 
-		$html = '<style>#user-edit-modal { display: none !important; }</style>';
+		// Build page HTML
+		$html = '';
 		$html .= '<div class="mw-body-content">';
 		$html .= '<h1>' . $this->msg( 'admindashboard-users-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
