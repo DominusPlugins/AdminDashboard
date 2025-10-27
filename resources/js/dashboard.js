@@ -1,9 +1,14 @@
 /**
- * Admin Dashboard JavaScript
+ * Admin Dashboard JavaScript (ResourceLoader module)
  */
 
-( function () {
+( function ( $, mw ) {
 	'use strict';
+
+	// Minimal diagnostics
+	if ( typeof console !== 'undefined' && console.log ) {
+		console.log( '[AdminDashboard] scripts module loaded' );
+	}
 
 	/**
 	 * Initialize dashboard functionality
@@ -220,12 +225,16 @@
 		alert( 'Edit group: ' + groupName );
 	}
 
-	// Initialize when DOM is ready
+	// Initialize on DOM ready and when content is re-rendered
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', initDashboard );
 	} else {
 		initDashboard();
 	}
+	// MediaWiki hook for content ready (supports PJAX or skin reflows)
+	mw.hook( 'wikipage.content' ).add( function () {
+		initDashboard();
+	} );
 
 	// Export functions to global scope for MediaWiki integration
 	window.AdminDashboard = {
@@ -235,4 +244,4 @@
 		showUserEditModal: showUserEditModal,
 		hideUserEditModal: hideUserEditModal
 	};
-} )();
+} )( jQuery, mediaWiki );
