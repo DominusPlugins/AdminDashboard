@@ -21,7 +21,7 @@ class SpecialAdminDashboard extends SpecialPage {
 		$out = $this->getOutput();
 		$out->addModuleStyles( 'ext.AdminDashboard.styles' );
 		// Use v2 module name to avoid stale client cache of old code paths
-		$out->addModules( 'ext.AdminDashboard.scripts.v2' );
+		$out->addModules( 'ext.AdminDashboard.scripts.v3' );
 
 		$action = $par ?: 'overview';
 
