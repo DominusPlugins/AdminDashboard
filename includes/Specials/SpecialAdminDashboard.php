@@ -168,28 +168,27 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '<h1>' . $this->msg( 'admindashboard-users-title' )->text() . '</h1>';
 		$html .= $this->makeNav();
 
-		// Search form
-		$html .= '<form method="GET" class="mw-ui-form" style="margin-bottom: 20px;">';
-		$html .= '<fieldset>';
-		$html .= '<legend>' . $this->msg( 'admindashboard-search' )->text() . '</legend>';
-		$html .= '<div class="mw-ui-form-field">';
-		$html .= '<label for="search-input">' . $this->msg( 'admindashboard-search-users' )->text() . ':</label>';
-		$html .= '<input type="text" id="search-input" name="search" value="' . htmlspecialchars( $search ) . '" class="mw-ui-input" style="flex: 1; min-width: 250px;">';
+		// Search and Actions Bar
+		$html .= '<div class="user-management-controls" style="background: #f8f9fa; border: 1px solid #a2a9b1; border-radius: 2px; padding: 16px; margin-bottom: 20px;">';
+		$html .= '<div class="controls-row" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">';
+
+		// Search section
+		$html .= '<div class="search-section" style="flex: 1; min-width: 250px;">';
+		$html .= '<label for="search-input" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-search-users' )->text() . ':</label>';
+		$html .= '<div style="display: flex; gap: 8px;">';
+		$html .= '<input type="text" id="search-input" name="search" value="' . htmlspecialchars( $search ) . '" class="mw-ui-input" style="flex: 1;" placeholder="' . $this->msg( 'admindashboard-search-users' )->text() . '">';
 		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-primary">' . $this->msg( 'admindashboard-search' )->text() . '</button>';
 		if ( $search ) {
 			$html .= '<a href="' . htmlspecialchars( $this->getTitleUrl( 'users' ) ) . '" class="mw-ui-button">' . $this->msg( 'admindashboard-clear' )->text() . '</a>';
 		}
 		$html .= '</div>';
-		$html .= '</fieldset>';
-		$html .= '</form>';
+		$html .= '</div>';
 
-		// Bulk actions form
-		$html .= '<form method="POST" class="mw-ui-form" style="margin-bottom: 20px;">';
-		$html .= '<fieldset>';
-		$html .= '<legend>' . $this->msg( 'admindashboard-bulk-actions' )->text() . '</legend>';
-		$html .= '<div class="mw-ui-form-field">';
-		$html .= '<label for="bulk-action-select">' . $this->msg( 'admindashboard-select-action' )->text() . ':</label>';
-		$html .= '<select id="bulk-action-select" name="bulk_action" class="mw-ui-select">';
+		// Bulk actions section
+		$html .= '<div class="bulk-actions-section" style="min-width: 200px;">';
+		$html .= '<label for="bulk-action-select" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-bulk-actions' )->text() . ':</label>';
+		$html .= '<div style="display: flex; gap: 8px;">';
+		$html .= '<select id="bulk-action-select" name="bulk_action" class="mw-ui-select" style="flex: 1;">';
 		$html .= '<option value="">' . $this->msg( 'admindashboard-select-action' )->text() . '</option>';
 		$html .= '<option value="promote">' . $this->msg( 'admindashboard-promote-sysop' )->text() . '</option>';
 		$html .= '<option value="demote">' . $this->msg( 'admindashboard-remove-sysop' )->text() . '</option>';
@@ -197,7 +196,16 @@ class SpecialAdminDashboard extends SpecialPage {
 		$html .= '</select>';
 		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-destructive">' . $this->msg( 'admindashboard-apply' )->text() . '</button>';
 		$html .= '</div>';
-		$html .= '</fieldset>';
+		$html .= '</div>';
+
+		$html .= '</div>';
+		$html .= '</div>';
+		$html .= '</form>'; // Close the search form
+
+		// Start a new form for bulk actions
+		$html .= '<form method="POST" id="bulk-actions-form" style="display: none;">';
+		$html .= '<input type="hidden" name="bulk_action" id="bulk-action-value">';
+		$html .= '<input type="hidden" name="user_ids" id="selected-user-ids">';
 		$html .= '</form>';
 
 		$html .= '<table class="wikitable sortable" style="width: 100%;">';
@@ -210,9 +218,9 @@ class SpecialAdminDashboard extends SpecialPage {
 			$userLink = $GLOBALS['wgScriptPath'] . '/index.php/User:' . urlencode( $user['name'] );
 			$groups = !empty( $user['groups'] ) ? implode( ', ', array_map( 'htmlspecialchars', $user['groups'] ) ) : $this->msg( 'admindashboard-none' )->text();
 			
-			$html .= '<tr' . $blockClass . '>';
+			$html .= '<tr' . $blockClass . ' data-user-id="' . intval( $userId ) . '" data-user-name="' . htmlspecialchars( $user['name'] ) . '" data-user-email="' . htmlspecialchars( $user['email'] ?? '' ) . '" data-user-groups="' . htmlspecialchars( json_encode( $user['groups'] ) ) . '" data-user-registered="' . htmlspecialchars( $user['registration'] ) . '" data-user-touched="' . htmlspecialchars( $user['touched'] ) . '">';
 			$html .= '<td><input type="checkbox" name="user_ids[]" value="' . intval( $userId ) . '"></td>';
-			$html .= '<td><a href="' . htmlspecialchars( $userLink ) . '">' . htmlspecialchars( $user['name'] ) . '</a></td>';
+			$html .= '<td><a href="' . htmlspecialchars( $userLink ) . '" class="user-edit-link" data-user-id="' . intval( $userId ) . '">' . htmlspecialchars( $user['name'] ) . '</a></td>';
 			$html .= '<td>' . $groups . '</td>';
 			$html .= '<td>' . substr( $user['registration'], 0, 10 ) . '</td>';
 			$html .= '<td>' . substr( $user['touched'], 0, 10 ) . '</td>';
@@ -230,15 +238,156 @@ class SpecialAdminDashboard extends SpecialPage {
 			$html .= '</tr>';
 		}
 
-		$html .= '</table>';
+		// User Edit Modal
+		$html .= '<div id="user-edit-modal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">';
+		$html .= '<div class="modal-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #a2a9b1; border-radius: 4px; padding: 20px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">';
+		$html .= '<div class="modal-header" style="border-bottom: 1px solid #a2a9b1; padding-bottom: 10px; margin-bottom: 15px;">';
+		$html .= '<h3 id="modal-title">' . $this->msg( 'admindashboard-edit-user' )->text() . '</h3>';
+		$html .= '<button type="button" class="modal-close mw-ui-button" style="float: right;">×</button>';
+		$html .= '</div>';
+		$html .= '<form id="user-edit-form">';
+		$html .= '<input type="hidden" id="edit-user-id" name="user_id">';
+
+		// User details section
+		$html .= '<fieldset style="border: 1px solid #a2a9b1; border-radius: 2px; padding: 12px; margin-bottom: 15px;">';
+		$html .= '<legend style="font-weight: bold; padding: 0 8px;">' . $this->msg( 'admindashboard-user-details' )->text() . '</legend>';
+
+		$html .= '<div style="margin-bottom: 10px;">';
+		$html .= '<label for="edit-username" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-username' )->text() . ':</label>';
+		$html .= '<input type="text" id="edit-username" class="mw-ui-input" readonly style="width: 100%;">';
 		$html .= '</div>';
 
-		// Add JavaScript for checkbox handling
+		$html .= '<div style="margin-bottom: 10px;">';
+		$html .= '<label for="edit-email" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-email' )->text() . ':</label>';
+		$html .= '<input type="email" id="edit-email" name="email" class="mw-ui-input" style="width: 100%;">';
+		$html .= '</div>';
+
+		$html .= '<div style="margin-bottom: 10px;">';
+		$html .= '<label style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-registered' )->text() . ':</label>';
+		$html .= '<span id="edit-registered" style="color: #666;"></span>';
+		$html .= '</div>';
+
+		$html .= '<div style="margin-bottom: 10px;">';
+		$html .= '<label style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-last-active' )->text() . ':</label>';
+		$html .= '<span id="edit-last-active" style="color: #666;"></span>';
+		$html .= '</div>';
+		$html .= '</fieldset>';
+
+		// User groups section
+		$html .= '<fieldset style="border: 1px solid #a2a9b1; border-radius: 2px; padding: 12px; margin-bottom: 15px;">';
+		$html .= '<legend style="font-weight: bold; padding: 0 8px;">' . $this->msg( 'admindashboard-user-groups' )->text() . '</legend>';
+		$html .= '<div id="user-groups-list" style="margin-bottom: 10px;"></div>';
+
+		$html .= '<div style="margin-bottom: 10px;">';
+		$html .= '<label for="add-group-select" style="display: block; font-weight: 600; margin-bottom: 4px;">' . $this->msg( 'admindashboard-add-group' )->text() . ':</label>';
+		$html .= '<select id="add-group-select" class="mw-ui-select" style="width: 100%;">';
+		$html .= '<option value="">' . $this->msg( 'admindashboard-select-group' )->text() . '</option>';
+		$html .= '<option value="sysop">' . $this->msg( 'admindashboard-sysop' )->text() . '</option>';
+		$html .= '<option value="bureaucrat">' . $this->msg( 'admindashboard-bureaucrat' )->text() . '</option>';
+		$html .= '<option value="bot">' . $this->msg( 'admindashboard-bot' )->text() . '</option>';
+		$html .= '<option value="interface-admin">' . $this->msg( 'admindashboard-interface-admin' )->text() . '</option>';
+		$html .= '</select>';
+		$html .= '<button type="button" id="add-group-btn" class="mw-ui-button mw-ui-button-primary" style="margin-top: 8px;">' . $this->msg( 'admindashboard-add' )->text() . '</button>';
+		$html .= '</div>';
+		$html .= '</fieldset>';
+
+		// Action buttons
+		$html .= '<div class="modal-footer" style="border-top: 1px solid #a2a9b1; padding-top: 15px; text-align: right;">';
+		$html .= '<button type="button" class="modal-close mw-ui-button">' . $this->msg( 'admindashboard-cancel' )->text() . '</button>';
+		$html .= '<button type="submit" class="mw-ui-button mw-ui-button-primary" style="margin-left: 8px;">' . $this->msg( 'admindashboard-save' )->text() . '</button>';
+		$html .= '<button type="button" id="block-user-btn" class="mw-ui-button mw-ui-button-destructive" style="margin-left: 8px;">' . $this->msg( 'admindashboard-block-user' )->text() . '</button>';
+		$html .= '</div>';
+
+		$html .= '</form>';
+		$html .= '</div>';
+		$html .= '</div>';
+
+		// Add JavaScript for modal functionality
 		$html .= '<script>
-		document.getElementById("select-all").addEventListener("change", function() {
-			var checkboxes = document.querySelectorAll("input[name=\"user_ids[]\"]");
-			checkboxes.forEach(function(checkbox) {
-				checkbox.checked = document.getElementById("select-all").checked;
+		// Modal functionality
+		function showUserEditModal(userData) {
+			document.getElementById("edit-user-id").value = userData.id;
+			document.getElementById("edit-username").value = userData.name;
+			document.getElementById("edit-email").value = userData.email || "";
+			document.getElementById("edit-registered").textContent = userData.registration.substring(0, 10);
+			document.getElementById("edit-last-active").textContent = userData.touched.substring(0, 10);
+
+			// Display user groups
+			const groupsList = document.getElementById("user-groups-list");
+			groupsList.innerHTML = "";
+			if (userData.groups && userData.groups.length > 0) {
+				userData.groups.forEach(function(group) {
+					const groupDiv = document.createElement("div");
+					groupDiv.style.cssText = "display: inline-block; background: #f0f0f0; padding: 2px 6px; margin: 2px; border-radius: 2px; font-size: 12px;";
+					groupDiv.innerHTML = group + " <button type=\"button\" onclick=\"removeGroup(this, \'" + group + "\')\" style=\"border: none; background: none; color: #d33; cursor: pointer; font-weight: bold;\">×</button>";
+					groupsList.appendChild(groupDiv);
+				});
+			} else {
+				groupsList.innerHTML = "<em>' . addslashes( $this->msg( 'admindashboard-no-groups' )->text() ) . '</em>";
+			}
+
+			document.getElementById("user-edit-modal").style.display = "block";
+		}
+
+		function hideUserEditModal() {
+			document.getElementById("user-edit-modal").style.display = "none";
+		}
+
+		function removeGroup(button, groupName) {
+			button.parentElement.remove();
+		}
+
+		// Event listeners
+		document.addEventListener("DOMContentLoaded", function() {
+			// User edit link clicks
+			document.querySelectorAll(".user-edit-link").forEach(function(link) {
+				link.addEventListener("click", function(e) {
+					e.preventDefault();
+					const row = this.closest("tr");
+					const userData = {
+						id: row.dataset.userId,
+						name: row.dataset.userName,
+						email: row.dataset.userEmail,
+						groups: JSON.parse(row.dataset.userGroups || "[]"),
+						registration: row.dataset.userRegistered,
+						touched: row.dataset.userTouched
+					};
+					showUserEditModal(userData);
+				});
+			});
+
+			// Modal close buttons
+			document.querySelectorAll(".modal-close").forEach(function(btn) {
+				btn.addEventListener("click", hideUserEditModal);
+			});
+
+			// Click outside modal to close
+			document.getElementById("user-edit-modal").addEventListener("click", function(e) {
+				if (e.target === this) {
+					hideUserEditModal();
+				}
+			});
+
+			// Add group functionality
+			document.getElementById("add-group-btn").addEventListener("click", function() {
+				const select = document.getElementById("add-group-select");
+				const groupName = select.value;
+				if (groupName) {
+					const groupsList = document.getElementById("user-groups-list");
+					const groupDiv = document.createElement("div");
+					groupDiv.style.cssText = "display: inline-block; background: #f0f0f0; padding: 2px 6px; margin: 2px; border-radius: 2px; font-size: 12px;";
+					groupDiv.innerHTML = groupName + " <button type=\"button\" onclick=\"removeGroup(this, \'" + groupName + "\')\" style=\"border: none; background: none; color: #d33; cursor: pointer; font-weight: bold;\">×</button>";
+					groupsList.appendChild(groupDiv);
+					select.value = "";
+				}
+			});
+
+			// Select all checkbox functionality
+			document.getElementById("select-all").addEventListener("change", function() {
+				var checkboxes = document.querySelectorAll("input[name=\"user_ids[]\"]");
+				checkboxes.forEach(function(checkbox) {
+					checkbox.checked = document.getElementById("select-all").checked;
+				});
 			});
 		});
 		</script>';

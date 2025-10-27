@@ -46,5 +46,19 @@
 	"admindashboard-none": "None",
 	"admindashboard-na": "N/A",
 	"admindashboard-blocked": "Blocked",
-	"admindashboard-active": "Active"
+	"admindashboard-active": "Active",
+	"admindashboard-edit-user": "Edit User",
+	"admindashboard-user-details": "User Details",
+	"admindashboard-user-groups": "User Groups",
+	"admindashboard-add-group": "Add Group",
+	"admindashboard-select-group": "Select Group",
+	"admindashboard-sysop": "Sysop",
+	"admindashboard-bureaucrat": "Bureaucrat",
+	"admindashboard-bot": "Bot",
+	"admindashboard-interface-admin": "Interface Admin",
+	"admindashboard-add": "Add",
+	"admindashboard-cancel": "Cancel",
+	"admindashboard-save": "Save",
+	"admindashboard-block-user": "Block User",
+	"admindashboard-no-groups": "No groups assigned"
 }
