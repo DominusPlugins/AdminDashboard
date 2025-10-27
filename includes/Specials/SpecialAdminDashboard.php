@@ -238,6 +238,8 @@ class SpecialAdminDashboard extends SpecialPage {
 			$html .= '</tr>';
 		}
 
+		$html .= '</table>';
+
 		// User Edit Modal
 		$html .= '<div id="user-edit-modal" class="modal-overlay">';
 		$html .= '<div class="modal-content">';
