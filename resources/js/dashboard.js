@@ -160,7 +160,7 @@
 		function apiPostWithCsrf( params, retry ) {
 			retry = typeof retry === 'number' ? retry : 1;
 			const api = new mw.Api();
-			const base = Object.assign( { format: 'json', assert: 'user' }, params );
+			const base = Object.assign( { format: 'json', assert: 'user', origin: ( window && window.location && window.location.origin ) ? window.location.origin : undefined }, params );
 			var dfd = $.Deferred();
 
 			function postWith( token, mayRetry ) {
